@@ -25,13 +25,20 @@
 
   // ---------- Estadísticas ----------
   function stats() {
-    let owned = 0, missing = 0, dupes = 0;
+    let ownedBase = 0, missingBase = 0, dupes = 0, ownedExtra = 0;
     A.stickers.forEach(function (s) {
       const c = Store.getCount(s.id);
-      if (c >= 1) owned += 1; else missing += 1;
-      if (c >= 2) dupes += c - 1;
+      if (s.extra) {
+        if (c >= 1) ownedExtra += 1;
+      } else {
+        if (c >= 1) ownedBase += 1; else missingBase += 1;
+      }
+      if (c >= 2) dupes += c - 1; // repetidas de todo (incluye extras)
     });
-    return { owned: owned, missing: missing, dupes: dupes, total: A.total };
+    return {
+      owned: ownedBase, missing: missingBase, dupes: dupes,
+      ownedExtra: ownedExtra, total: A.total, extrasTotal: A.extrasTotal,
+    };
   }
 
   function teamProgress(team) {
@@ -72,6 +79,7 @@
     if (owned) cls.push("owned");
     if (dup > 0) cls.push("dupe");
     if (s.foil) cls.push("foil");
+    if (s.extra) cls.push("extra");
 
     return (
       '<div class="' + cls.join(" ") + '" data-id="' + s.id + '">' +
@@ -81,6 +89,7 @@
         '</div>' +
         '<div class="cell-no">' + s.codeLabel + (s.foil ? ' <span class="foil-dot" title="Foil">✦</span>' : "") + '</div>' +
         '<div class="cell-name">' + escapeHTML(nameOf(s)) + '</div>' +
+        (s.sub ? '<div class="cell-sub">' + (s.flag || "") + " " + escapeHTML(s.sub) + '</div>' : "") +
         '<div class="cell-status">' +
           (owned
             ? '<span class="chip ok">✓ Tengo</span>' + (dup > 0 ? ' <span class="chip dup">+' + dup + '</span>' : "")
@@ -142,6 +151,24 @@
       }
     });
 
+    // Extras Coca-Cola
+    const ex = A.extraSection;
+    const exCells = ex.stickerIds.map(function (id) { return A.byId[id]; });
+    const exVisible = exCells.filter(function (s) { return stickerMatches(s) || matchesQuery(ex.title); });
+    if (exVisible.length) {
+      const exOwned = exCells.filter(function (s) { return Store.getCount(s.id) >= 1; }).length;
+      html +=
+        '<div class="group-label">Extras</div>' +
+        '<section class="page extra-page">' +
+          '<div class="page-head">' +
+            '<div class="page-title"><span class="page-emoji">🥤</span> ' + ex.title +
+              ' <small>' + ex.subtitle + '</small></div>' +
+            '<div class="page-prog">' + exOwned + "/" + exCells.length + '</div>' +
+          '</div>' +
+          '<div class="grid">' + exVisible.map(cellHTML).join("") + '</div>' +
+        '</section>';
+    }
+
     if (!html) html = '<div class="empty">No se encontraron cromos para "' + escapeHTML(query) + '".</div>';
     el("#content").innerHTML = html;
   }
@@ -172,6 +199,7 @@
     A.teams.forEach(function (team) {
       html += block(team.name + " (Grupo " + team.group + ")", team.flag, team.stickerIds.map(function (id) { return A.byId[id]; }));
     });
+    html += block(A.extraSection.title, "🥤", A.extraSection.stickerIds.map(function (id) { return A.byId[id]; }));
 
     if (!html) {
       html = '<div class="empty">🎉 ¡No te falta ninguna! Álbum completo o sin resultados para tu búsqueda.</div>';
@@ -204,7 +232,10 @@
     rows.forEach(function (r) {
       const s = r.s;
       const team = s.teamId ? A.teams.find(function (t) { return t.id === s.teamId; }) : null;
-      const where = team ? (team.flag + " " + team.name + " · Grupo " + team.group) : "Especial";
+      let where;
+      if (team) where = team.flag + " " + team.name + " · Grupo " + team.group;
+      else if (s.extra) where = "🥤 Coca-Cola" + (s.sub ? " · " + s.sub : "");
+      else where = "Especial";
       html +=
         '<div class="dup-row" data-id="' + s.id + '">' +
           '<div class="dup-no">' + s.codeLabel + '</div>' +
@@ -228,7 +259,9 @@
     el("#stat-missing").textContent = st.missing;
     el("#stat-dupes").textContent = st.dupes;
     el("#progress-fill").style.width = pct + "%";
-    el("#progress-pct").textContent = pct + "% · " + st.owned + "/" + st.total;
+    el("#progress-big").textContent = pct + "%";
+    el("#progress-count").textContent = st.owned + " / " + st.total + " cromos";
+    el("#extra-prog").textContent = "🥤 Extras Coca-Cola: " + st.ownedExtra + " / " + st.extrasTotal;
 
     // pestaña activa
     document.querySelectorAll(".tab").forEach(function (t) {

@@ -18,24 +18,22 @@
       </div>
       <div class="menu">
         <button class="menu-btn" id="menu-toggle" title="Opciones">⋯</button>
-        <div class="menu-pop" id="menu-pop" hidden>
-          <button id="btn-export">⬇️ Exportar respaldo</button>
-          <button id="btn-import">⬆️ Importar respaldo</button>
-          <button id="btn-reset" class="danger">🗑️ Reiniciar todo</button>
-          <input type="file" id="import-file" accept="application/json" hidden />
-        </div>
       </div>
     </div>
 
-    <div class="progress">
+    <div class="progress-box">
+      <div class="progress-top">
+        <span class="progress-big" id="progress-big">0%</span>
+        <span class="progress-count" id="progress-count">0 / 980 cromos</span>
+      </div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-      <div class="progress-pct" id="progress-pct">0%</div>
+      <div class="extra-prog" id="extra-prog">🥤 Extras Coca-Cola: 0 / 12</div>
     </div>
 
     <div class="stats">
       <div class="stat"><span class="stat-num" id="stat-owned">0</span><span class="stat-lbl">Tengo</span></div>
       <div class="stat"><span class="stat-num" id="stat-missing">0</span><span class="stat-lbl">Faltan</span></div>
-      <div class="stat"><span class="stat-num" id="stat-dupes">0</span><span class="stat-lbl">Repes</span></div>
+      <div class="stat stat-dup"><span class="stat-num" id="stat-dupes">0</span><span class="stat-lbl">Repes</span></div>
     </div>
 
     <div class="search-wrap">
@@ -56,20 +54,39 @@
     <p class="footer-soon">Próximamente: cuentas e intercambio / venta entre usuarios 🤝</p>
   </footer>
 
+  <!-- Menú de opciones (hoja inferior con fondo, no tapa el contenido) -->
+  <div class="sheet-backdrop" id="menu-backdrop" hidden>
+    <div class="sheet" id="menu-pop">
+      <div class="sheet-handle"></div>
+      <h3 class="sheet-title">Opciones</h3>
+      <button id="btn-export">⬇️ Exportar respaldo</button>
+      <button id="btn-import">⬆️ Importar respaldo</button>
+      <button id="btn-reset" class="danger">🗑️ Reiniciar todo</button>
+      <button id="btn-close-menu" class="sheet-close">Cerrar</button>
+      <input type="file" id="import-file" accept="application/json" hidden />
+    </div>
+  </div>
+
   <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
   <script>
-    // Menú desplegable de opciones
+    // Menú de opciones como hoja inferior con fondo oscuro
     (function () {
       var toggle = document.getElementById("menu-toggle");
+      var backdrop = document.getElementById("menu-backdrop");
       var pop = document.getElementById("menu-pop");
-      toggle.addEventListener("click", function (e) {
-        e.stopPropagation();
-        pop.hidden = !pop.hidden;
-      });
-      document.addEventListener("click", function () { pop.hidden = true; });
+      var close = document.getElementById("btn-close-menu");
+      function open() { backdrop.hidden = false; }
+      function hide() { backdrop.hidden = true; }
+      toggle.addEventListener("click", open);
+      close.addEventListener("click", hide);
+      backdrop.addEventListener("click", function () { hide(); });
       pop.addEventListener("click", function (e) { e.stopPropagation(); });
+      // cerrar la hoja también tras elegir exportar/importar/reiniciar
+      ["btn-export", "btn-import", "btn-reset"].forEach(function (id) {
+        document.getElementById(id).addEventListener("click", function () { setTimeout(hide, 50); });
+      });
     })();
   </script>
 </body>

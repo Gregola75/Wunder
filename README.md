@@ -16,6 +16,10 @@ para luego **cambiar o vender** con otros usuarios.
   - Selecciones: código de país de 3 letras + número, p. ej. `ARG 1` (escudo),
     `ARG 13` (plantilla) … `ARG 20`, `BRA 7`, `MEX 12`, etc.
   - El buscador entiende los códigos: escribe `ARG7` o `ARG 7`.
+- **Sección de Extras (Coca-Cola)**: los 12 cromos exclusivos `CC 1`…`CC 12`
+  (con jugador y selección reales) que se completan en la página especial del
+  álbum, con su propio progreso (x/12).
+- **% de avance** bien visible: porcentaje grande + barra del álbum oficial (980).
 - **Marcar cromos**: toca un cromo para marcarlo como *Tengo*; toca otra vez para
   sumar **repetidas** (x2, x3…). El botón **−** quita una.
 - **Faltan**: lista de todo lo que aún no tienes, agrupado por selección.

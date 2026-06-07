@@ -48,6 +48,25 @@
     "Leyenda Mundial 11",
   ];
 
+  // --- Extras exclusivos Coca-Cola (CC1..CC12) ---
+  // No vienen en sobres normales: están bajo las etiquetas de botellas
+  // Coca-Cola y completan una página especial del álbum.
+  // [nombre, selección, bandera]
+  const COCACOLA = [
+    ["Lamine Yamal", "España", "🇪🇸"],
+    ["Joshua Kimmich", "Alemania", "🇩🇪"],
+    ["Harry Kane", "Inglaterra", "🏴󠁧󠁢󠁥󠁮󠁧󠁿"],
+    ["Santiago Giménez", "México", "🇲🇽"],
+    ["Antonee Robinson", "Estados Unidos", "🇺🇸"],
+    ["Jefferson Lerma", "Colombia", "🇨🇴"],
+    ["Edson Álvarez", "México", "🇲🇽"],
+    ["Virgil van Dijk", "Países Bajos", "🇳🇱"],
+    ["Alphonso Davies", "Canadá", "🇨🇦"],
+    ["Weston McKennie", "Estados Unidos", "🇺🇸"],
+    ["Lautaro Martínez", "Argentina", "🇦🇷"],
+    ["Gabriel Magalhães", "Brasil", "🇧🇷"],
+  ];
+
   // --- 48 selecciones por grupo (orden del sorteo final) ---
   // [nombre en español, código corto, bandera emoji]
   const GROUPS = {
@@ -201,11 +220,31 @@
     });
   });
 
+  // Extras Coca-Cola (CC 1..12) — se cuentan aparte del álbum oficial (980)
+  const extraIds = [];
+  COCACOLA.forEach(function (p, i) {
+    const st = add({
+      section: "extra", role: "cocacola", extra: true,
+      name: p[0], sub: p[1], flag: p[2], foil: true,
+      prefix: "CC", pos: i + 1,
+    });
+    extraIds.push(st.id);
+  });
+  const extraSection = {
+    key: "extras", title: "Extras · Coca-Cola", subtitle: "Exclusivos fuera de sobres",
+    stickerIds: extraIds,
+  };
+
+  const baseCount = stickers.filter(function (s) { return !s.extra; }).length; // 980
+
   window.ALBUM = {
-    total: stickers.length, // 980
+    total: baseCount,            // 980 (álbum oficial)
+    extrasTotal: extraIds.length, // 12 (Coca-Cola)
+    totalAll: stickers.length,    // 992
     stickers: stickers,
     teams: teams,
     sections: sections,
+    extraSection: extraSection,
     groups: Object.keys(GROUPS),
     byId: stickers.reduce(function (m, s) { m[s.id] = s; return m; }, {}),
   };
