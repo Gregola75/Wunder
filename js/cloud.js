@@ -24,6 +24,28 @@
   var pushTimer = null;
   var statusText = "local";
 
+  // Colección activa + cachés por-colección (la nube guarda un mapa por álbum).
+  var ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
+  var cloudAlbums = {};   // { collectionId: state }
+  var marketMine = {};    // { collectionId: { code: {mode,price,spare} } }
+
+  // La nube antes guardaba el estado "plano" (solo wc2026). Lo convertimos a mapa.
+  function albumsMap(data) {
+    if (!data || typeof data !== "object") return {};
+    if (data.counts || data.names || data.listings || data.settings) return { wc2026: data };
+    return data;
+  }
+  function marketMap(listings) {
+    if (!listings || typeof listings !== "object") return {};
+    var keys = Object.keys(listings);
+    if (!keys.length) return {};
+    var first = listings[keys[0]];
+    if (first && (first.mode !== undefined || first.price !== undefined || first.spare !== undefined)) {
+      return { wc2026: listings }; // formato antiguo (plano) = wc2026
+    }
+    return listings;
+  }
+
   // ---------- utilidades ----------
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
@@ -159,13 +181,20 @@
   function pullMergePush() {
     if (!session) return;
     setStatus("sincronizando…");
+    // Traemos mi álbum (mapa por colección) y mi fila de mercado (para conservar
+    // las ofertas de otras colecciones al republicar).
     sb.from("albums").select("data").eq("user_id", session.user.id).maybeSingle()
       .then(function (res) {
         if (res.error) { setStatus("error al sincronizar"); console.warn(res.error); return; }
-        var cloud = res.data && res.data.data ? res.data.data : null;
-        var merged = mergeStates(localState(), cloud);
+        cloudAlbums = albumsMap(res.data && res.data.data);
+        var merged = mergeStates(localState(), cloudAlbums[ACTIVE] || null);
         window.Store.importData(JSON.stringify(merged));
         refreshUI();
+        // Cargamos mi mercado actual (todas las colecciones) antes de republicar.
+        return sb.from("market").select("listings").eq("user_id", session.user.id).maybeSingle();
+      })
+      .then(function (mres) {
+        if (mres && !mres.error) marketMine = marketMap(mres.data && mres.data.listings);
         push(true);
       })
       .catch(function (e) { setStatus("sin conexión"); console.warn(e); });
@@ -176,9 +205,10 @@
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
     function doIt() {
       var st = localState();
+      cloudAlbums[ACTIVE] = st; // actualizamos solo la colección activa
       var row = {
         user_id: session.user.id,
-        data: st,
+        data: cloudAlbums,
         contact: (st.settings && st.settings.contact) || null,
         updated_at: new Date().toISOString(),
       };
@@ -215,11 +245,12 @@
 
   function publishMarket(st) {
     if (!session) return;
+    marketMine[ACTIVE] = buildPublic(st); // ofertas de la colección activa
     var mrow = {
       user_id: session.user.id,
       display_name: displayName(),
       contact: (st.settings && st.settings.contact) || null,
-      listings: buildPublic(st),
+      listings: marketMine,
       updated_at: new Date().toISOString(),
     };
     sb.from("market").upsert(mrow).then(function (res) {
@@ -232,6 +263,8 @@
     onLocalChange: function () { if (session) push(false); },
     isOnline: function () { return !!session; },
     myId: function () { return session && session.user ? session.user.id : null; },
+    // Devuelve las ofertas de una fila de mercado para la colección activa.
+    listingsFor: function (row) { return marketMap(row && row.listings)[ACTIVE] || {}; },
     // Lee las ofertas del resto de usuarios (no las tuyas).
     fetchMarket: function () {
       if (!session) return Promise.resolve([]);

@@ -374,7 +374,7 @@
     // Agrupamos por usuario: una tarjeta por persona con sus cromos en oferta.
     const users = [];
     rows.forEach(function (row) {
-      const listings = row.listings || {};
+      const listings = (window.Cloud && window.Cloud.listingsFor) ? window.Cloud.listingsFor(row) : (row.listings || {});
       const items = [];
       let needCount = 0;
       Object.keys(listings).forEach(function (code) {
@@ -669,7 +669,7 @@
     allSectionKeys = [];
     A.sections.forEach(function (s) { allSectionKeys.push(s.key); });
     A.teams.forEach(function (t) { allSectionKeys.push(t.id); });
-    allSectionKeys.push("extras");
+    if (A.extraSection && A.extraSection.stickerIds.length) allSectionKeys.push("extras");
     let html = '<button class="flagchip flagchip-special" data-goto="__top" title="Inicio">⭐</button>';
     A.groups.forEach(function (g) {
       html += '<span class="flagbar-sep">' + g + '</span>';
@@ -677,7 +677,9 @@
         html += '<button class="flagchip" data-goto="' + t.id + '" title="' + escapeHTML(t.name) + '">' + t.flag + '</button>';
       });
     });
-    html += '<button class="flagchip flagchip-special" data-goto="__extras" title="Extras Coca-Cola">🥤</button>';
+    if (A.extraSection && A.extraSection.stickerIds.length) {
+      html += '<button class="flagchip flagchip-special" data-goto="__extras" title="Extras Coca-Cola">🥤</button>';
+    }
     bar.innerHTML = html;
     bar.addEventListener("click", function (e) {
       const b = e.target.closest("[data-goto]");
@@ -782,6 +784,16 @@
     sync();
   }
 
+  // Cabecera según la colección activa (badge, anfitriones, nº de cromos).
+  function applyCollectionMeta() {
+    const meta = A.meta || {};
+    const sub = document.querySelector(".brand-sub");
+    if (sub) sub.innerHTML = '<span class="brand-badge">' + escapeHTML(meta.badge || "") + '</span> ' +
+      (meta.hosts || "") + ' · ' + A.total + ' cromos';
+    const ep = el("#extra-prog");
+    if (ep) ep.style.display = (A.extrasTotal > 0) ? "" : "none";
+  }
+
   // Exponemos render() para que la nube refresque la pantalla tras sincronizar.
   window.WunderApp = { render: render };
 
@@ -789,6 +801,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     wireEvents();
     buildFlagbar();
+    applyCollectionMeta();
     render();
     setupHeaderToggle();
     setupCollections();

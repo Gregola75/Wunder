@@ -21,10 +21,10 @@
       id: "worldcup", name: "Copa del Mundo", emoji: "🌍",
       editions: [
         { id: "wc2026", title: "Mundial 2026", sub: "Canadá · EE.UU. · México", status: "ready" },
-        { id: "wc2022", title: "Mundial 2022", sub: "Catar", status: "soon" },
-        { id: "wc2018", title: "Mundial 2018", sub: "Rusia", status: "soon" },
-        { id: "wc2014", title: "Mundial 2014", sub: "Brasil", status: "soon" },
-        { id: "wc2010", title: "Mundial 2010", sub: "Sudáfrica", status: "soon" },
+        { id: "wc2022", title: "Mundial 2022", sub: "Catar", status: "ready" },
+        { id: "wc2018", title: "Mundial 2018", sub: "Rusia", status: "ready" },
+        { id: "wc2014", title: "Mundial 2014", sub: "Brasil", status: "ready" },
+        { id: "wc2010", title: "Mundial 2010", sub: "Sudáfrica", status: "ready" },
       ],
     },
     {

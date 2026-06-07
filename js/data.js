@@ -20,6 +20,49 @@
 (function () {
   "use strict";
 
+  // ¿Qué colección está activa? Si es un Mundial anterior (2010-2022), se
+  // construye con un builder simple (32 selecciones × 20). El Mundial 2026
+  // (con Apertura, FIFA Museum y Coca-Cola) se construye más abajo igual que siempre.
+  var ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
+  if (ACTIVE !== "wc2026" && window.WORLDCUPS && window.WORLDCUPS[ACTIVE]) {
+    buildSimpleWorldCup(ACTIVE, window.WORLDCUPS[ACTIVE]);
+    return;
+  }
+
+  // Builder para Mundiales anteriores: solo selecciones (sin páginas especiales).
+  function buildSimpleWorldCup(id, cfg) {
+    var stickers = [], teams = [], no = 0;
+    function add(s) { no += 1; s.no = no; s.id = "s" + no; stickers.push(s); return s; }
+    Object.keys(cfg.groups).forEach(function (g) {
+      cfg.groups[g].forEach(function (t) {
+        var teamId = t[1];
+        var team = { id: teamId, name: t[0], code: t[1], flag: t[2], group: g, stickerIds: [] };
+        var playerNum = 0;
+        for (var pos = 1; pos <= 20; pos++) {
+          var base = { section: "team", teamId: teamId, group: g, prefix: teamId, pos: pos,
+                       code: teamId + pos, codeLabel: teamId + " " + pos };
+          var st;
+          if (pos === 1) st = add(Object.assign({}, base, { role: "badge", name: "Escudo " + team.name, foil: true }));
+          else if (pos === 13) st = add(Object.assign({}, base, { role: "team_photo", name: "Plantilla " + team.name, foil: false }));
+          else { playerNum += 1; st = add(Object.assign({}, base, { role: "player", name: "Jugador " + playerNum, foil: false })); }
+          team.stickerIds.push(st.id);
+        }
+        teams.push(team);
+      });
+    });
+    stickers.forEach(function (s) {
+      if (s.foil) { s.rarity = "rara"; s.value = 3; } else { s.rarity = "comun"; s.value = 1; }
+    });
+    window.ALBUM = {
+      total: stickers.length, extrasTotal: 0, totalAll: stickers.length,
+      stickers: stickers, teams: teams, sections: [],
+      extraSection: { key: "extras", title: "Extras", subtitle: "", stickerIds: [] },
+      groups: Object.keys(cfg.groups),
+      byId: stickers.reduce(function (m, s) { m[s.id] = s; return m; }, {}),
+      meta: { badge: cfg.badge, hosts: cfg.hosts, host: cfg.host },
+    };
+  }
+
   // --- Apertura (9 cromos foil): cromo 00 + FWC 1..8 ---
   // Confirmado: el cromo 00 es el primero; FWC 1 y FWC 2 son el Trofeo.
   // (Los nombres son editables: tócalos dos veces para ajustarlos a tu álbum.)
@@ -270,5 +313,6 @@
     extraSection: extraSection,
     groups: Object.keys(GROUPS),
     byId: stickers.reduce(function (m, s) { m[s.id] = s; return m; }, {}),
+    meta: { badge: "MUNDIAL 2026", hosts: "🇨🇦 🇺🇸 🇲🇽", host: "Canadá · EE. UU. · México" },
   };
 })();

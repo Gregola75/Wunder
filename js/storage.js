@@ -17,8 +17,11 @@
 (function () {
   "use strict";
 
-  const KEY = "wunder.album.wc2026.v2";     // nuevo formato (por código)
-  const OLD_KEY = "wunder.album.wc2026.v1"; // formato viejo (por posición)
+  // Cada colección guarda su progreso por separado. El Mundial 2026 conserva
+  // su clave histórica para no perder datos de usuarios actuales.
+  const ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
+  const KEY = ACTIVE === "wc2026" ? "wunder.album.wc2026.v2" : "swalbum." + ACTIVE + ".v2";
+  const OLD_KEY = "wunder.album.wc2026.v1"; // formato viejo (por posición) — solo 2026
 
   function empty() {
     return { counts: {}, names: {}, listings: {}, settings: {} };
