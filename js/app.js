@@ -227,7 +227,11 @@
       return;
     }
 
-    let html = '<div class="list-summary">Tienes <b>' + totalSpare + '</b> cromos repetidos para cambiar / vender (' + rows.length + ' distintos).</div>';
+    let totalValue = 0;
+    rows.forEach(function (r) { totalValue += (r.s.value || 1) * r.spare; });
+
+    let html = '<div class="list-summary">Tienes <b>' + totalSpare + '</b> repetidos para cambiar / vender (' +
+      rows.length + ' distintos) · Valor estimado: <b>' + totalValue + ' pts</b></div>';
     html += '<div class="dup-list">';
     rows.forEach(function (r) {
       const s = r.s;
@@ -236,18 +240,37 @@
       if (team) where = team.flag + " " + team.name + " · Grupo " + team.group;
       else if (s.extra) where = "🥤 Coca-Cola" + (s.sub ? " · " + s.sub : "");
       else where = "Especial";
+
+      const lst = Store.getListing(s.id);
+      const isCambio = lst && lst.type === "cambio";
+      const isVenta = lst && lst.type === "venta";
+      const priceVal = isVenta && lst.price != null ? lst.price : "";
+
       html +=
         '<div class="dup-row" data-id="' + s.id + '">' +
-          '<div class="dup-no">' + s.codeLabel + '</div>' +
-          '<div class="dup-info"><div class="dup-name">' + escapeHTML(nameOf(s)) + '</div>' +
-            '<div class="dup-where">' + escapeHTML(where) + ' · ' + roleTag(s) + '</div></div>' +
-          '<div class="dup-count"><button class="mini btn-dec">−</button>' +
-            '<span class="dup-x">x' + r.spare + '</span>' +
-            '<button class="mini btn-inc">+</button></div>' +
+          '<div class="dup-top">' +
+            '<div class="dup-no">' + s.codeLabel + '</div>' +
+            '<div class="dup-info"><div class="dup-name">' + escapeHTML(nameOf(s)) + ' ' + rarityChip(s) + '</div>' +
+              '<div class="dup-where">' + escapeHTML(where) + ' · ' + roleTag(s) + ' · Valor ' + (s.value || 1) + ' pts</div></div>' +
+            '<div class="dup-count"><button class="mini btn-dec">−</button>' +
+              '<span class="dup-x">x' + r.spare + '</span>' +
+              '<button class="mini btn-inc">+</button></div>' +
+          '</div>' +
+          '<div class="listing-row">' +
+            '<button class="lst-btn btn-cambio' + (isCambio ? " active" : "") + '">🔁 Cambio</button>' +
+            '<button class="lst-btn btn-venta' + (isVenta ? " active" : "") + '">💲 Venta</button>' +
+            (isVenta ? '<input class="price-input" type="number" min="0" inputmode="decimal" placeholder="Precio" value="' + priceVal + '" />' : "") +
+          '</div>' +
         '</div>';
     });
     html += '</div>';
     el("#content").innerHTML = html;
+  }
+
+  function rarityChip(s) {
+    if (s.rarity === "ultra") return '<span class="rar rar-ultra">💎 Ultra</span>';
+    if (s.rarity === "rara") return '<span class="rar rar-rara">✦ Rara</span>';
+    return '<span class="rar rar-comun">Común</span>';
   }
 
   // ---------- Render principal ----------
@@ -332,12 +355,40 @@
         render();
         return;
       }
+      // Anuncios de cambio / venta (en la pestaña Repes)
+      if (e.target.classList.contains("btn-cambio")) {
+        const cur = Store.getListing(id);
+        Store.setListing(id, cur && cur.type === "cambio" ? null : "cambio");
+        render();
+        return;
+      }
+      if (e.target.classList.contains("btn-venta")) {
+        const cur = Store.getListing(id);
+        Store.setListing(id, cur && cur.type === "venta" ? null : "venta", cur ? cur.price : null);
+        render();
+        return;
+      }
       // Click en el cuerpo del cromo (sólo en vista álbum / faltan) => sumar 1
       if (cell) {
         Store.increment(id);
         render();
       }
     });
+
+    // Precio de venta (sin re-render para no perder el foco al escribir)
+    el("#content").addEventListener("input", function (e) {
+      if (!e.target.classList.contains("price-input")) return;
+      const row = e.target.closest(".dup-row");
+      if (!row) return;
+      Store.setListing(row.dataset.id, "venta", e.target.value);
+    });
+
+    // Contacto del usuario (para cambios/ventas)
+    const contact = el("#contact-input");
+    if (contact) {
+      contact.value = Store.getSetting("contact", "");
+      contact.addEventListener("input", function () { Store.setSetting("contact", contact.value.trim()); });
+    }
 
     // Menú: exportar / importar / reiniciar
     el("#btn-export").addEventListener("click", exportData);

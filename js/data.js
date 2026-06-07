@@ -250,6 +250,16 @@
 
   const baseCount = stickers.filter(function (s) { return !s.extra; }).length; // 980
 
+  // Rareza y valor base por tipo (más raras = más valor):
+  //   ultra  -> Coca-Cola (solo en botellas)            valor 10
+  //   rara   -> foils (escudos, FWC, apertura 00)        valor 3
+  //   comun  -> jugadores y foto de equipo               valor 1
+  stickers.forEach(function (s) {
+    if (s.extra) { s.rarity = "ultra"; s.value = 10; }
+    else if (s.foil) { s.rarity = "rara"; s.value = 3; }
+    else { s.rarity = "comun"; s.value = 1; }
+  });
+
   window.ALBUM = {
     total: baseCount,            // 980 (álbum oficial)
     extrasTotal: extraIds.length, // 12 (Coca-Cola)

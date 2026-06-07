@@ -91,6 +91,12 @@ html, body {
 .sheet button:hover { background: #24375a; }
 .sheet .danger { color: var(--danger); }
 .sheet .sheet-close { text-align: center; color: var(--muted); background: none; }
+.sheet-field { display: flex; flex-direction: column; gap: 6px; padding: 4px 2px 8px; }
+.sheet-field span { font-size: 12px; color: var(--muted); }
+.sheet-field input {
+  padding: 12px 14px; border-radius: 12px; font-size: 15px;
+  background: #0a1424; border: 1px solid var(--line); color: var(--text);
+}
 
 /* ---------- Progreso ---------- */
 .progress-box {
@@ -265,6 +271,27 @@ html, body {
 .dup-where { font-size: 12px; color: var(--muted); }
 .dup-count { display: flex; align-items: center; gap: 8px; }
 .dup-x { font-weight: 800; color: var(--dup); min-width: 28px; text-align: center; }
+.dup-row { flex-direction: column; align-items: stretch; gap: 10px; }
+.dup-top { display: flex; align-items: center; gap: 12px; }
+
+/* Rareza */
+.rar { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
+.rar-ultra { background: rgba(224, 65, 75, .18); color: #ff8a90; }
+.rar-rara { background: rgba(255, 210, 63, .16); color: var(--gold); }
+.rar-comun { background: #20324f; color: var(--muted); }
+
+/* Controles de cambio / venta */
+.listing-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lst-btn {
+  flex: 1; min-width: 110px; padding: 9px 10px; border-radius: 10px; cursor: pointer;
+  background: #0a1424; border: 1px solid var(--line); color: var(--muted); font-weight: 700; font-size: 13px;
+}
+.btn-cambio.active { background: rgba(0, 194, 168, .18); border-color: var(--accent); color: #7ff0d8; }
+.btn-venta.active { background: rgba(255, 210, 63, .16); border-color: var(--gold); color: var(--gold); }
+.price-input {
+  width: 110px; padding: 9px 10px; border-radius: 10px;
+  background: #0a1424; border: 1px solid var(--gold); color: var(--text); font-size: 14px;
+}
 
 .empty {
   text-align: center; color: var(--muted); padding: 40px 20px; font-size: 15px;
