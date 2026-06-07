@@ -70,31 +70,37 @@
     return matchesQuery(nameOf(s));
   }
 
-  // ---------- Render de un cromo ----------
+  // ---------- Render de un cromo (estilo cromo premium) ----------
+  const teamFlag = A.teams.reduce(function (m, t) { m[t.id] = t.flag; return m; }, {});
+
+  function flagFor(s) {
+    if (s.flag) return s.flag;                 // Coca-Cola trae bandera de país
+    if (s.teamId) return teamFlag[s.teamId] || "⚽";
+    if (s.section === "museum") return "🏆";    // leyendas / campeones
+    return "✨";                                // apertura
+  }
+
   function cellHTML(s) {
     const c = Store.getCount(s.id);
     const owned = c >= 1;
     const dup = Math.max(0, c - 1);
-    const cls = ["cell"];
-    if (owned) cls.push("owned");
+    const cls = ["cell", "cromo", owned ? "owned" : "missing"];
     if (dup > 0) cls.push("dupe");
     if (s.foil) cls.push("foil");
     if (s.extra) cls.push("extra");
 
     return (
       '<div class="' + cls.join(" ") + '" data-id="' + s.id + '">' +
-        '<div class="cell-actions">' +
+        (dup > 0 ? '<div class="cromo-dup">x' + dup + '</div>' : "") +
+        '<div class="cromo-actions">' +
           '<button class="mini btn-rename" title="Renombrar">✎</button>' +
           (owned ? '<button class="mini btn-dec" title="Quitar una">−</button>' : "") +
         '</div>' +
-        '<div class="cell-no">' + s.codeLabel + (s.foil ? ' <span class="foil-dot" title="Foil">✦</span>' : "") + '</div>' +
-        '<div class="cell-name">' + escapeHTML(nameOf(s)) + '</div>' +
-        (s.sub ? '<div class="cell-sub">' + (s.flag || "") + " " + escapeHTML(s.sub) + '</div>' : "") +
-        '<div class="cell-status">' +
-          (owned
-            ? '<span class="chip ok">✓ Tengo</span>' + (dup > 0 ? ' <span class="chip dup">+' + dup + '</span>' : "")
-            : '<span class="chip none">Falta</span>') +
-        '</div>' +
+        '<div class="cromo-code"><span>' + s.codeLabel + '</span>' + (s.foil ? '<span class="foil-dot">✦</span>' : "") + '</div>' +
+        '<div class="cromo-face"><span class="cromo-flag">' + flagFor(s) + '</span></div>' +
+        '<div class="cromo-name">' + escapeHTML(nameOf(s)) + '</div>' +
+        (s.sub ? '<div class="cromo-sub">' + escapeHTML(s.sub) + '</div>' : "") +
+        '<div class="cromo-state">' + (owned ? '<span class="st-ok">✓ La tengo</span>' : '<span class="st-no">Me falta</span>') + '</div>' +
       '</div>'
     );
   }
