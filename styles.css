@@ -69,6 +69,8 @@ html, body {
   backdrop-filter: blur(2px);
   display: flex; align-items: flex-end; justify-content: center;
 }
+/* El atributo hidden debe ganar al display:flex de arriba */
+.sheet-backdrop[hidden] { display: none; }
 .sheet {
   width: 100%; max-width: 480px;
   background: var(--card);
