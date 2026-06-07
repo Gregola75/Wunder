@@ -21,6 +21,11 @@
   let currentTab = "album";
   let query = "";
 
+  // Secciones plegables: guardamos qué selecciones están ABIERTAS (por defecto
+  // todas cerradas = álbum limpio tipo lista). Persiste entre re-dibujos.
+  const expanded = new Set();
+  let allSectionKeys = []; // se llena en buildFlagbar()
+
   // Doble toque para marcar por primera vez (evita marcar cromos sin querer).
   let armedId = null;     // cromo "preparado" esperando el segundo toque
   let armedEl = null;     // su elemento en pantalla
@@ -132,18 +137,30 @@
   function renderAlbum() {
     let html = "";
 
+    // Botón para abrir/cerrar todas las secciones (no aparece al buscar).
+    if (!query && allSectionKeys.length) {
+      const allOpen = allSectionKeys.every(function (k) { return expanded.has(k); });
+      html +=
+        '<div class="album-tools">' +
+          '<button class="tool-btn" data-expandall>' +
+            (allOpen ? "▸ Plegar todo" : "▾ Expandir todo") +
+          '</button>' +
+        '</div>';
+    }
+
     // Secciones especiales
     A.sections.forEach(function (sec) {
       const cells = sec.stickerIds.map(function (id) { return A.byId[id]; });
       const visible = cells.filter(function (s) { return stickerMatches(s) || matchesQuery(sec.title); });
       if (visible.length === 0) return;
       const owned = cells.filter(function (s) { return Store.getCount(s.id) >= 1; }).length;
+      const col = (!query && !expanded.has(sec.key)) ? " collapsed" : "";
       html +=
-        '<section class="page">' +
+        '<section class="page collapsible' + col + '" data-key="' + sec.key + '" data-sec="' + sec.key + '">' +
           '<div class="page-head">' +
             '<div class="page-title"><span class="page-emoji">⭐</span> ' + sec.title +
               ' <small>' + sec.subtitle + '</small></div>' +
-            '<div class="page-prog">' + owned + "/" + cells.length + '</div>' +
+            '<div class="page-right"><span class="page-prog">' + owned + "/" + cells.length + '</span><span class="page-chev">▸</span></div>' +
           '</div>' +
           '<div class="grid">' + visible.map(cellHTML).join("") + '</div>' +
         '</section>';
@@ -159,12 +176,13 @@
         const visible = teamMatches ? cells : cells.filter(function (s) { return stickerMatches(s); });
         if (visible.length === 0) return;
         const owned = teamProgress(team);
+        const col = (!query && !expanded.has(team.id)) ? " collapsed" : "";
         teamsHTML +=
-          '<section class="page" data-team="' + team.id + '">' +
+          '<section class="page collapsible' + col + '" data-team="' + team.id + '" data-key="' + team.id + '">' +
             '<div class="page-head">' +
               '<div class="page-title"><span class="page-emoji">' + team.flag + '</span> ' +
                 team.name + ' <small>Grupo ' + team.group + '</small></div>' +
-              '<div class="page-prog">' + owned + "/20</div>" +
+              '<div class="page-right"><span class="page-prog">' + owned + "/20</span><span class=\"page-chev\">▸</span></div>" +
             '</div>' +
             '<div class="grid">' + visible.map(cellHTML).join("") + '</div>' +
           '</section>';
@@ -180,13 +198,14 @@
     const exVisible = exCells.filter(function (s) { return stickerMatches(s) || matchesQuery(ex.title); });
     if (exVisible.length) {
       const exOwned = exCells.filter(function (s) { return Store.getCount(s.id) >= 1; }).length;
+      const exCol = (!query && !expanded.has("extras")) ? " collapsed" : "";
       html +=
         '<div class="group-label">Extras</div>' +
-        '<section class="page extra-page" id="sec-extras">' +
+        '<section class="page extra-page collapsible' + exCol + '" id="sec-extras" data-key="extras" data-sec="extras">' +
           '<div class="page-head">' +
             '<div class="page-title"><span class="page-emoji">🥤</span> ' + ex.title +
               ' <small>' + ex.subtitle + '</small></div>' +
-            '<div class="page-prog">' + exOwned + "/" + exCells.length + '</div>' +
+            '<div class="page-right"><span class="page-prog">' + exOwned + "/" + exCells.length + '</span><span class="page-chev">▸</span></div>' +
           '</div>' +
           '<div class="grid">' + exVisible.map(cellHTML).join("") + '</div>' +
         '</section>';
@@ -364,6 +383,22 @@
 
     // Clicks en el contenido (delegación)
     el("#content").addEventListener("click", function (e) {
+      // Botón "Expandir / Plegar todo"
+      if (e.target.closest("[data-expandall]")) {
+        const allOpen = allSectionKeys.every(function (k) { return expanded.has(k); });
+        expanded.clear();
+        if (!allOpen) allSectionKeys.forEach(function (k) { expanded.add(k); });
+        render();
+        return;
+      }
+      // Plegar / desplegar una sección al tocar su encabezado
+      const head = e.target.closest(".page-head");
+      if (head) {
+        const pg = head.closest(".page");
+        if (pg && pg.classList.contains("collapsible")) toggleSection(pg);
+        return;
+      }
+
       const cell = e.target.closest(".cell");
       const row = e.target.closest(".dup-row");
       const host = cell || row;
@@ -483,11 +518,24 @@
     e.target.value = "";
   }
 
+  // Abre / cierra una sección (sin re-dibujar todo).
+  function toggleSection(pageEl) {
+    const key = pageEl.getAttribute("data-key");
+    if (!key) return;
+    if (expanded.has(key)) { expanded.delete(key); pageEl.classList.add("collapsed"); }
+    else { expanded.add(key); pageEl.classList.remove("collapsed"); }
+  }
+
   // ---------- Atajo de banderas ----------
   // Una tira de banderas (por grupos) para saltar directo a cada selección.
   function buildFlagbar() {
     const bar = el("#flagbar");
     if (!bar) return;
+    // Lista de todas las secciones plegables (para "Expandir/Plegar todo").
+    allSectionKeys = [];
+    A.sections.forEach(function (s) { allSectionKeys.push(s.key); });
+    A.teams.forEach(function (t) { allSectionKeys.push(t.id); });
+    allSectionKeys.push("extras");
     let html = '<button class="flagchip flagchip-special" data-goto="__top" title="Inicio">⭐</button>';
     A.groups.forEach(function (g) {
       html += '<span class="flagbar-sep">' + g + '</span>';
@@ -509,6 +557,8 @@
     let needRender = false;
     if (query) { query = ""; const s = el("#search"); if (s) s.value = ""; needRender = true; }
     if (currentTab !== "album") { currentTab = "album"; needRender = true; }
+    // Abrimos la sección destino (salvo "inicio").
+    if (key !== "__top") expanded.add(key === "__extras" ? "extras" : key);
     if (needRender) render();
 
     if (key === "__top") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -516,6 +566,7 @@
       ? document.getElementById("sec-extras")
       : document.querySelector('.page[data-team="' + key + '"]');
     if (!target) return;
+    target.classList.remove("collapsed"); // por si no hubo re-dibujo
     const header = document.querySelector(".app-header");
     const off = (document.body.classList.contains("header-collapsed") || !header) ? 8 : header.offsetHeight + 8;
     const top = target.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) - off;

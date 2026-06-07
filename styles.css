@@ -228,6 +228,25 @@ body.locked .header-fab { display: none; }
   font-family: "Oswald", sans-serif;
 }
 
+/* ---------- Secciones plegables ---------- */
+.page.collapsible .page-head { cursor: pointer; user-select: none; }
+.page.collapsed .page-head { margin-bottom: 0; }
+.page.collapsed .grid { display: none; }
+.page-right { display: flex; align-items: center; gap: 8px; }
+.page-chev {
+  color: var(--muted); font-size: 12px; display: inline-block;
+  transition: transform .18s ease;
+}
+.page.collapsible:not(.collapsed) .page-chev { transform: rotate(90deg); }
+
+.album-tools { display: flex; justify-content: flex-end; padding: 0 2px 8px; }
+.tool-btn {
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+  font-family: "Oswald", sans-serif; letter-spacing: .6px;
+}
+.tool-btn:active { transform: scale(.97); }
+
 /* ---------- Progreso ---------- */
 .progress-box {
   margin-top: 12px;
