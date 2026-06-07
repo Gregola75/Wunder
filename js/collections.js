@@ -36,7 +36,8 @@
     {
       id: "adrenalyn", name: "Adrenalyn XL", emoji: "⚡",
       editions: [
-        { id: "adrenalyn", title: "Adrenalyn XL", sub: "Liga · Champions · Mundial", status: "soon" },
+        { id: "adx-laliga-2526", title: "Adrenalyn LaLiga 25/26", sub: "LaLiga EA Sports · 467 cartas", status: "ready" },
+        { id: "adx-laliga-2425", title: "Adrenalyn LaLiga 24/25", sub: "Temporada anterior", status: "soon" },
       ],
     },
     {

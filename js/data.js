@@ -24,9 +24,72 @@
   // construye con un builder simple (32 selecciones × 20). El Mundial 2026
   // (con Apertura, FIFA Museum y Coca-Cola) se construye más abajo igual que siempre.
   var ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
+  if (window.ADRENALYN && window.ADRENALYN[ACTIVE]) {
+    buildClubCardSet(ACTIVE, window.ADRENALYN[ACTIVE]);
+    return;
+  }
   if (ACTIVE !== "wc2026" && window.WORLDCUPS && window.WORLDCUPS[ACTIVE]) {
     buildSimpleWorldCup(ACTIVE, window.WORLDCUPS[ACTIVE]);
     return;
+  }
+
+  // Builder para colecciones de CARTAS por club (Adrenalyn): base por club +
+  // series especiales + extras (estadios). Sin grupos.
+  function buildClubCardSet(id, cfg) {
+    var stickers = [], teams = [], sections = [], no = 0;
+    function add(s) { no += 1; s.no = no; s.id = "s" + no; stickers.push(s); return s; }
+
+    // Base: cada club = escudo + N jugadores, numerados de forma correlativa.
+    cfg.clubs.forEach(function (c) {
+      var teamId = c[1];
+      var team = { id: teamId, name: c[0], code: c[1], flag: "🛡️", group: "", stickerIds: [] };
+      var st = add({ section: "team", teamId: teamId, role: "badge", name: "Escudo " + c[0], foil: true,
+                     flag: "🛡️", code: String(no + 1), codeLabel: "#" + (no + 1) });
+      team.stickerIds.push(st.id);
+      for (var p = 1; p <= cfg.playersPerClub; p++) {
+        st = add({ section: "team", teamId: teamId, role: "player", name: "Jugador " + p, foil: false,
+                   flag: "🛡️", code: String(no + 1), codeLabel: "#" + (no + 1) });
+        team.stickerIds.push(st.id);
+      }
+      teams.push(team);
+    });
+
+    // Series especiales.
+    cfg.series.forEach(function (serie) {
+      var key = serie[0], title = serie[1], sub = serie[2], count = serie[3];
+      var ids = [];
+      for (var i = 1; i <= count; i++) {
+        var st = add({ section: key, role: "special", name: title + " " + i, foil: true,
+                       code: String(no + 1), codeLabel: "#" + (no + 1) });
+        ids.push(st.id);
+      }
+      sections.push({ key: key, title: title, subtitle: sub, stickerIds: ids });
+    });
+
+    // Extras (estadios BIS), fuera del total principal.
+    var extraIds = [];
+    var exTitle = cfg.extras[0], exCount = cfg.extras[1];
+    for (var e = 1; e <= exCount; e++) {
+      var stx = add({ section: "extra", role: "stadium", extra: true, name: "Estadio " + e,
+                      flag: "🏟️", foil: true, code: "BIS" + e, codeLabel: "BIS " + e });
+      extraIds.push(stx.id);
+    }
+
+    stickers.forEach(function (s) {
+      if (s.extra) { s.rarity = "rara"; s.value = 5; }
+      else if (s.foil) { s.rarity = "rara"; s.value = 3; }
+      else { s.rarity = "comun"; s.value = 1; }
+    });
+
+    var baseCount = stickers.filter(function (s) { return !s.extra; }).length;
+    window.ALBUM = {
+      total: baseCount, extrasTotal: extraIds.length, totalAll: stickers.length,
+      stickers: stickers, teams: teams, sections: sections,
+      extraSection: { key: "extras", title: exTitle, subtitle: "", stickerIds: extraIds },
+      groups: [], // sin grupos: clubes en lista
+      byId: stickers.reduce(function (m, s) { m[s.id] = s; return m; }, {}),
+      meta: cfg.meta,
+    };
   }
 
   // Builder para Mundiales anteriores: solo selecciones (sin páginas especiales).

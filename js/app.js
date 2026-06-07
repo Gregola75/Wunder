@@ -175,31 +175,34 @@
         '</section>';
     });
 
-    // Selecciones por grupo
-    A.groups.forEach(function (g) {
-      const groupTeams = A.teams.filter(function (t) { return t.group === g; });
-      let teamsHTML = "";
-      groupTeams.forEach(function (team) {
-        const cells = team.stickerIds.map(function (id) { return A.byId[id]; });
-        const teamMatches = matchesQuery(team.name) || matchesQuery(team.code);
-        const visible = teamMatches ? cells : cells.filter(function (s) { return stickerMatches(s); });
-        if (visible.length === 0) return;
-        const owned = teamProgress(team);
-        const col = (!query && !expanded.has(team.id)) ? " collapsed" : "";
-        teamsHTML +=
-          '<section class="page collapsible' + col + '" data-team="' + team.id + '" data-key="' + team.id + '">' +
-            '<div class="page-head">' +
-              '<div class="page-title"><span class="page-emoji">' + team.flag + '</span> ' +
-                team.name + ' <small>Grupo ' + team.group + '</small></div>' +
-              '<div class="page-right"><span class="page-prog">' + owned + "/20</span><span class=\"page-chev\">▸</span></div>" +
-            '</div>' +
-            '<div class="grid">' + visible.map(cellHTML).join("") + '</div>' +
-          '</section>';
+    // Equipos / clubes. Los Mundiales van por grupos; otras colecciones (clubes) van en lista.
+    function teamSectionHTML(team) {
+      const cells = team.stickerIds.map(function (id) { return A.byId[id]; });
+      const teamMatches = matchesQuery(team.name) || matchesQuery(team.code);
+      const visible = teamMatches ? cells : cells.filter(function (s) { return stickerMatches(s); });
+      if (visible.length === 0) return "";
+      const owned = teamProgress(team);
+      const col = (!query && !expanded.has(team.id)) ? " collapsed" : "";
+      const sub = (A.groups.length && team.group) ? (' <small>Grupo ' + team.group + '</small>') : "";
+      return '<section class="page collapsible' + col + '" data-team="' + team.id + '" data-key="' + team.id + '">' +
+          '<div class="page-head">' +
+            '<div class="page-title"><span class="page-emoji">' + team.flag + '</span> ' + escapeHTML(team.name) + sub + '</div>' +
+            '<div class="page-right"><span class="page-prog">' + owned + "/" + cells.length + '</span><span class="page-chev">▸</span></div>' +
+          '</div>' +
+          '<div class="grid">' + visible.map(cellHTML).join("") + '</div>' +
+        '</section>';
+    }
+
+    if (A.groups.length) {
+      A.groups.forEach(function (g) {
+        const groupTeams = A.teams.filter(function (t) { return t.group === g; });
+        let teamsHTML = "";
+        groupTeams.forEach(function (team) { teamsHTML += teamSectionHTML(team); });
+        if (teamsHTML) html += '<div class="group-label">Grupo ' + g + '</div>' + teamsHTML;
       });
-      if (teamsHTML) {
-        html += '<div class="group-label">Grupo ' + g + '</div>' + teamsHTML;
-      }
-    });
+    } else {
+      A.teams.forEach(function (team) { html += teamSectionHTML(team); });
+    }
 
     // Extras Coca-Cola
     const ex = A.extraSection;
@@ -456,7 +459,7 @@
     el("#progress-fill").style.width = pct + "%";
     el("#progress-big").textContent = pct + "%";
     el("#progress-count").textContent = st.owned + " / " + st.total + " cromos";
-    el("#extra-prog").textContent = "🥤 Extras Coca-Cola: " + st.ownedExtra + " / " + st.extrasTotal;
+    el("#extra-prog").textContent = "📦 " + A.extraSection.title + ": " + st.ownedExtra + " / " + st.extrasTotal;
 
     // pestaña activa
     document.querySelectorAll(".tab").forEach(function (t) {
@@ -671,14 +674,22 @@
     A.teams.forEach(function (t) { allSectionKeys.push(t.id); });
     if (A.extraSection && A.extraSection.stickerIds.length) allSectionKeys.push("extras");
     let html = '<button class="flagchip flagchip-special" data-goto="__top" title="Inicio">⭐</button>';
-    A.groups.forEach(function (g) {
-      html += '<span class="flagbar-sep">' + g + '</span>';
-      A.teams.filter(function (t) { return t.group === g; }).forEach(function (t) {
-        html += '<button class="flagchip" data-goto="' + t.id + '" title="' + escapeHTML(t.name) + '">' + t.flag + '</button>';
+    if (A.groups.length) {
+      // Mundiales: banderas agrupadas por grupo.
+      A.groups.forEach(function (g) {
+        html += '<span class="flagbar-sep">' + g + '</span>';
+        A.teams.filter(function (t) { return t.group === g; }).forEach(function (t) {
+          html += '<button class="flagchip" data-goto="' + t.id + '" title="' + escapeHTML(t.name) + '">' + t.flag + '</button>';
+        });
       });
-    });
+    } else {
+      // Clubes (Adrenalyn): atajo por código de club (texto).
+      A.teams.forEach(function (t) {
+        html += '<button class="flagchip flagchip-code" data-goto="' + t.id + '" title="' + escapeHTML(t.name) + '">' + escapeHTML(t.code) + '</button>';
+      });
+    }
     if (A.extraSection && A.extraSection.stickerIds.length) {
-      html += '<button class="flagchip flagchip-special" data-goto="__extras" title="Extras Coca-Cola">🥤</button>';
+      html += '<button class="flagchip flagchip-special" data-goto="__extras" title="' + escapeHTML(A.extraSection.title) + '">📦</button>';
     }
     bar.innerHTML = html;
     bar.addEventListener("click", function (e) {
