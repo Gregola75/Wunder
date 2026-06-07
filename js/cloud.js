@@ -1,29 +1,22 @@
 /*
- * cloud.js — Cuentas y sincronización en la nube (Supabase).
+ * cloud.js — Cuentas, login obligatorio y sincronización en la nube (Supabase).
  *
- * Filosofía: "offline-first". La app SIEMPRE funciona en local (localStorage).
- * Si inicias sesión, tu álbum se sincroniza con la nube y lo puedes ver en
- * cualquier dispositivo. Si no hay internet o no has entrado, todo sigue
- * funcionando igual que antes.
+ * - Para usar la app hay que entrar (pantalla de bienvenida #welcome).
+ * - Al entrar, descargamos tu álbum y lo FUSIONAMOS con lo local (en las
+ *   cantidades nos quedamos con el mayor, así nunca pierdes cromos).
+ * - Al cambiar algo, subimos el estado a la nube con un pequeño retardo.
  *
- * Sincronización:
- *   - Al entrar: descargamos tu álbum de la nube y lo FUSIONAMOS con el local
- *     (en las cantidades nos quedamos con el mayor, así nunca pierdes cromos).
- *   - Al cambiar algo: subimos el estado a la nube (con un pequeño retardo
- *     para no saturar).
- *
- * Guardamos todo el estado en una fila por usuario (tabla "albums", columna
- * "data" de tipo jsonb). Es simple y robusto para esta fase.
+ * Si Supabase no está disponible (sin internet al cargar la librería), la app
+ * NO se bloquea: funciona en modo local como antes (red de seguridad).
  */
 (function () {
   "use strict";
 
   var cfg = window.WUNDER_CONFIG || {};
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-    console.warn("Supabase no disponible: la app funciona en modo local.");
-    // Aun así dejamos un Cloud "vacío" para que storage.js no falle.
+    console.warn("Supabase no disponible: la app funciona en modo local (sin candado).");
     window.Cloud = { onLocalChange: function () {}, isOnline: function () { return false; } };
-    return;
+    return; // No bloqueamos: la pantalla de bienvenida queda oculta.
   }
 
   var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
@@ -32,7 +25,6 @@
   var statusText = "local";
 
   // ---------- utilidades ----------
-  function box() { return document.getElementById("account-box"); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
@@ -45,14 +37,34 @@
     var f = document.getElementById("cloud-status");
     if (f) f.textContent = session ? "☁️ " + t : "";
   }
-  function msg(t, isErr) {
-    var m = document.getElementById("acc-msg");
+  function msg(p, t, isErr) {
+    var m = document.getElementById(p + "-msg");
     if (m) { m.textContent = t; m.className = "acc-msg" + (isErr ? " err" : ""); }
   }
 
-  // ---------- pintar el bloque de cuenta dentro del menú ----------
-  function render() {
-    var b = box();
+  // Formulario de entrar / crear cuenta reutilizable (prefijo de ids).
+  function authFormHTML(p) {
+    return (
+      '<input id="' + p + '-email" type="email" placeholder="Tu email" autocomplete="email" />' +
+      '<input id="' + p + '-pass" type="password" placeholder="Contraseña (mín. 6)" autocomplete="current-password" />' +
+      '<div class="acc-actions">' +
+        '<button class="acc-primary" data-auth="in" data-p="' + p + '">Entrar</button>' +
+        '<button data-auth="up" data-p="' + p + '">Crear cuenta</button>' +
+      '</div>' +
+      '<div class="acc-msg" id="' + p + '-msg"></div>'
+    );
+  }
+
+  // ---------- pantalla de bienvenida (candado) ----------
+  function renderWelcome() {
+    var host = document.getElementById("welcome-auth");
+    if (!host || session) return;
+    host.innerHTML = authFormHTML("w");
+  }
+
+  // ---------- bloque de cuenta dentro del menú de opciones ----------
+  function renderAccountBox() {
+    var b = document.getElementById("account-box");
     if (!b) return;
     if (session && session.user) {
       b.innerHTML =
@@ -60,20 +72,21 @@
         '<div class="acc-email">' + esc(session.user.email || "") + '</div>' +
         '<div class="acc-status" id="acc-status">Estado: ' + esc(statusText) + '</div>' +
         '<button id="acc-signout" class="sheet-close">Cerrar sesión</button>';
-      document.getElementById("acc-signout").addEventListener("click", signOut);
     } else {
-      b.innerHTML =
-        '<div class="acc-title">☁️ Cuenta y nube</div>' +
-        '<p class="acc-help">Entra para guardar tu álbum en la nube y verlo en cualquier dispositivo.</p>' +
-        '<input id="acc-email" type="email" placeholder="Tu email" autocomplete="email" />' +
-        '<input id="acc-pass" type="password" placeholder="Contraseña (mín. 6)" autocomplete="current-password" />' +
-        '<div class="acc-actions">' +
-          '<button id="acc-login" class="acc-primary">Entrar</button>' +
-          '<button id="acc-signup">Crear cuenta</button>' +
-        '</div>' +
-        '<div class="acc-msg" id="acc-msg"></div>';
-      document.getElementById("acc-login").addEventListener("click", function () { doAuth("in"); });
-      document.getElementById("acc-signup").addEventListener("click", function () { doAuth("up"); });
+      b.innerHTML = '<div class="acc-help">No has iniciado sesión.</div>';
+    }
+  }
+
+  // ---------- candado: mostrar app sólo si hay sesión ----------
+  function applyGate() {
+    var w = document.getElementById("welcome");
+    if (session) {
+      if (w) w.hidden = true;
+      document.body.classList.remove("locked");
+    } else {
+      if (w) w.hidden = false;
+      document.body.classList.add("locked");
+      renderWelcome();
     }
   }
 
@@ -83,28 +96,28 @@
     if (/already registered|already been registered/i.test(m)) return "Ese email ya tiene cuenta. Pulsa Entrar.";
     if (/at least 6|Password should be/i.test(m)) return "La contraseña debe tener al menos 6 caracteres.";
     if (/Email not confirmed/i.test(m)) return "Tienes que confirmar tu email antes de entrar (mira tu correo).";
+    if (/valid email|invalid format/i.test(m)) return "Escribe un email válido.";
     return m;
   }
 
-  function doAuth(mode) {
-    var emEl = document.getElementById("acc-email");
-    var pwEl = document.getElementById("acc-pass");
+  function doAuth(p, mode) {
+    var emEl = document.getElementById(p + "-email");
+    var pwEl = document.getElementById(p + "-pass");
     var email = (emEl && emEl.value || "").trim();
     var pass = (pwEl && pwEl.value || "");
-    if (!email || !pass) { msg("Escribe tu email y contraseña.", true); return; }
-    msg(mode === "up" ? "Creando cuenta…" : "Entrando…");
-    var p = mode === "up"
+    if (!email || !pass) { msg(p, "Escribe tu email y contraseña.", true); return; }
+    msg(p, mode === "up" ? "Creando cuenta…" : "Entrando…");
+    var prom = mode === "up"
       ? sb.auth.signUp({ email: email, password: pass })
       : sb.auth.signInWithPassword({ email: email, password: pass });
-    p.then(function (res) {
-      if (res.error) { msg(traduce(res.error.message), true); return; }
-      // Si no hay sesión pero sí usuario => falta confirmar el email.
+    prom.then(function (res) {
+      if (res.error) { msg(p, traduce(res.error.message), true); return; }
       if (!res.data.session && res.data.user) {
-        msg("Cuenta creada. Revisa tu email para confirmar y luego pulsa Entrar.", false);
+        msg(p, "Cuenta creada. Revisa tu email para confirmar y luego pulsa Entrar.", false);
         return;
       }
-      // Con sesión: onAuthStateChange hará el resto (fusionar y sincronizar).
-    }).catch(function () { msg("No se pudo conectar. Revisa tu internet.", true); });
+      // Con sesión: onAuthStateChange quita el candado y sincroniza.
+    }).catch(function () { msg(p, "No se pudo conectar. Revisa tu internet.", true); });
   }
 
   function signOut() { sb.auth.signOut(); }
@@ -124,7 +137,6 @@
     Object.keys(codes).forEach(function (k) {
       out.counts[k] = Math.max((local.counts || {})[k] || 0, (cloud.counts || {})[k] || 0);
     });
-    // En nombres/anuncios/ajustes: lo local manda sobre lo de la nube.
     out.names = Object.assign({}, cloud.names || {}, local.names || {});
     out.listings = Object.assign({}, cloud.listings || {}, local.listings || {});
     out.settings = Object.assign({}, cloud.settings || {}, local.settings || {});
@@ -147,7 +159,7 @@
         var merged = mergeStates(localState(), cloud);
         window.Store.importData(JSON.stringify(merged));
         refreshUI();
-        push(true); // sube el estado fusionado de inmediato
+        push(true);
       })
       .catch(function (e) { setStatus("sin conexión"); console.warn(e); });
   }
@@ -172,25 +184,40 @@
     if (immediate) doIt(); else pushTimer = setTimeout(doIt, 1500);
   }
 
-  // API que usa storage.js para avisar de cambios locales.
   window.Cloud = {
     onLocalChange: function () { if (session) push(false); },
     isOnline: function () { return !!session; },
   };
 
+  // ---------- eventos (delegación, una sola vez) ----------
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest && e.target.closest("[data-auth]");
+    if (btn) { doAuth(btn.getAttribute("data-p"), btn.getAttribute("data-auth")); return; }
+    if (e.target && e.target.id === "acc-signout") { signOut(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var t = e.target;
+    if (t && /-(email|pass)$/.test(t.id || "")) {
+      doAuth(t.id.replace(/-(email|pass)$/, ""), "in");
+    }
+  });
+
   // ---------- arranque y cambios de sesión ----------
   sb.auth.onAuthStateChange(function (event, sess) {
     session = sess;
-    render();
-    if (event === "SIGNED_IN") { pullMergePush(); }
-    else if (event === "SIGNED_OUT") { setStatus("local"); }
+    applyGate();
+    renderAccountBox();
+    if (event === "SIGNED_IN") pullMergePush();
+    else if (event === "SIGNED_OUT") setStatus("local");
   });
 
-  document.addEventListener("DOMContentLoaded", function () {
-    sb.auth.getSession().then(function (r) {
-      session = r.data.session;
-      render();
-      if (session) pullMergePush(); else setStatus("local");
-    });
+  // Bloqueamos de inmediato hasta saber si hay sesión (evita ver la app un instante).
+  document.body.classList.add("locked");
+  sb.auth.getSession().then(function (r) {
+    session = r.data.session;
+    applyGate();
+    renderAccountBox();
+    if (session) pullMergePush(); else setStatus("local");
   });
 })();

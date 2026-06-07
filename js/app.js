@@ -437,6 +437,32 @@
     e.target.value = "";
   }
 
+  // ---------- Cabecera retráctil ----------
+  // Al deslizar hacia abajo, la cabecera se esconde para dar espacio a los
+  // cromos; al subir un poco, reaparece. Así no estorba con tantas barajitas.
+  function setupHeaderAutohide() {
+    const header = document.querySelector(".app-header");
+    if (!header) return;
+    let lastY = window.scrollY || 0;
+    let ticking = false;
+
+    function update() {
+      ticking = false;
+      const y = window.scrollY || window.pageYOffset || 0;
+      // Cerca de arriba: siempre visible.
+      if (y < 90) { header.classList.remove("header-hidden"); lastY = y; return; }
+      const delta = y - lastY;
+      if (Math.abs(delta) < 8) return;        // ignora micro-movimientos
+      if (delta > 0) header.classList.add("header-hidden");   // bajando -> ocultar
+      else header.classList.remove("header-hidden");          // subiendo -> mostrar
+      lastY = y;
+    }
+
+    window.addEventListener("scroll", function () {
+      if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+  }
+
   // Exponemos render() para que la nube refresque la pantalla tras sincronizar.
   window.WunderApp = { render: render };
 
@@ -444,5 +470,6 @@
   document.addEventListener("DOMContentLoaded", function () {
     wireEvents();
     render();
+    setupHeaderAutohide();
   });
 })();
