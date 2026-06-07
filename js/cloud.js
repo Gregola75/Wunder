@@ -185,7 +185,7 @@
     // las ofertas de otras colecciones al republicar).
     sb.from("albums").select("data").eq("user_id", session.user.id).maybeSingle()
       .then(function (res) {
-        if (res.error) { setStatus("error al sincronizar"); console.warn(res.error); return; }
+        if (res.error) { console.warn(res.error); throw res.error; } // no seguimos: evitamos sobrescribir
         cloudAlbums = albumsMap(res.data && res.data.data);
         var merged = mergeStates(localState(), cloudAlbums[ACTIVE] || null);
         window.Store.importData(JSON.stringify(merged));
