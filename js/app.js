@@ -182,7 +182,7 @@
       const exOwned = exCells.filter(function (s) { return Store.getCount(s.id) >= 1; }).length;
       html +=
         '<div class="group-label">Extras</div>' +
-        '<section class="page extra-page">' +
+        '<section class="page extra-page" id="sec-extras">' +
           '<div class="page-head">' +
             '<div class="page-title"><span class="page-emoji">🥤</span> ' + ex.title +
               ' <small>' + ex.subtitle + '</small></div>' +
@@ -317,6 +317,10 @@
     document.querySelectorAll(".tab").forEach(function (t) {
       t.classList.toggle("active", t.dataset.tab === currentTab);
     });
+
+    // El atajo de banderas sólo tiene sentido en el Álbum y sin búsqueda activa.
+    const fb = el("#flagbar");
+    if (fb) fb.hidden = currentTab !== "album" || !!query;
 
     try {
       if (currentTab === "album") renderAlbum();
@@ -479,6 +483,45 @@
     e.target.value = "";
   }
 
+  // ---------- Atajo de banderas ----------
+  // Una tira de banderas (por grupos) para saltar directo a cada selección.
+  function buildFlagbar() {
+    const bar = el("#flagbar");
+    if (!bar) return;
+    let html = '<button class="flagchip flagchip-special" data-goto="__top" title="Inicio">⭐</button>';
+    A.groups.forEach(function (g) {
+      html += '<span class="flagbar-sep">' + g + '</span>';
+      A.teams.filter(function (t) { return t.group === g; }).forEach(function (t) {
+        html += '<button class="flagchip" data-goto="' + t.id + '" title="' + escapeHTML(t.name) + '">' + t.flag + '</button>';
+      });
+    });
+    html += '<button class="flagchip flagchip-special" data-goto="__extras" title="Extras Coca-Cola">🥤</button>';
+    bar.innerHTML = html;
+    bar.addEventListener("click", function (e) {
+      const b = e.target.closest("[data-goto]");
+      if (b) gotoTarget(b.getAttribute("data-goto"));
+    });
+  }
+
+  // Desplaza hasta una selección (o inicio / extras), con margen por la cabecera.
+  function gotoTarget(key) {
+    // Si estábamos buscando o en otra pestaña, volvemos al álbum limpio.
+    let needRender = false;
+    if (query) { query = ""; const s = el("#search"); if (s) s.value = ""; needRender = true; }
+    if (currentTab !== "album") { currentTab = "album"; needRender = true; }
+    if (needRender) render();
+
+    if (key === "__top") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const target = key === "__extras"
+      ? document.getElementById("sec-extras")
+      : document.querySelector('.page[data-team="' + key + '"]');
+    if (!target) return;
+    const header = document.querySelector(".app-header");
+    const off = (document.body.classList.contains("header-collapsed") || !header) ? 8 : header.offsetHeight + 8;
+    const top = target.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) - off;
+    window.scrollTo({ top: top, behavior: "smooth" });
+  }
+
   // ---------- Cabecera plegable (con botón) ----------
   // Un botón flotante esconde/muestra la cabecera cuando TÚ quieras, para
   // ganar espacio sin movimientos automáticos que despisten al deslizar.
@@ -503,6 +546,7 @@
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {
     wireEvents();
+    buildFlagbar();
     render();
     setupHeaderToggle();
   });

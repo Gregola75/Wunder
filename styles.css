@@ -184,6 +184,50 @@ body.locked .header-fab { display: none; }
 }
 .cell .st-arm { color: var(--accent); font-weight: 700; }
 
+/* ---------- Estilo "álbum oficial" ---------- */
+/* Tipografía deportiva condensada para títulos y números. */
+.brand h1, .welcome-card h1, .page-title, .group-label,
+.progress-big, .stat-num, .tab, .page-prog {
+  font-family: "Oswald", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.brand h1 { text-transform: uppercase; letter-spacing: .6px; font-weight: 700; }
+.page-title { letter-spacing: .3px; }
+.group-label { text-transform: uppercase; letter-spacing: 1.6px; }
+
+/* Banda dorada superior, como el lomo de un álbum. */
+.app-header { border-top: 3px solid var(--gold); }
+
+/* Distintivo "ÁLBUM OFICIAL". */
+.brand-badge {
+  display: inline-block; background: linear-gradient(180deg, #ffe375, var(--gold));
+  color: #3a2a00; font-weight: 800; font-size: 10px; letter-spacing: .8px;
+  padding: 2px 7px; border-radius: 999px; vertical-align: middle; margin-right: 4px;
+}
+
+/* ---------- Atajo de banderas ---------- */
+.flagbar {
+  display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 10px 2px 2px; margin-top: 6px; scrollbar-width: none;
+}
+.flagbar::-webkit-scrollbar { display: none; }
+.flagbar[hidden] { display: none; }
+.flagchip {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 10px;
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  font-size: 22px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.flagchip:active { transform: scale(.94); }
+.flagchip-special {
+  background: linear-gradient(180deg, #1b3050, #14283f);
+  border-color: var(--gold); font-size: 18px;
+}
+.flagbar-sep {
+  flex: 0 0 auto; align-self: center; color: var(--gold); font-weight: 700;
+  font-size: 11px; letter-spacing: .5px; padding: 0 2px 0 8px;
+  font-family: "Oswald", sans-serif;
+}
+
 /* ---------- Progreso ---------- */
 .progress-box {
   margin-top: 12px;
