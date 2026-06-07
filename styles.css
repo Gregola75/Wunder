@@ -239,6 +239,45 @@ body.locked .header-fab { display: none; }
 }
 .page.collapsible:not(.collapsed) .page-chev { transform: rotate(90deg); }
 
+/* ---------- Mercado ---------- */
+.mkt-tools { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 10px; }
+.mkt-fbtn {
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 999px; padding: 7px 12px; font-size: 12px; cursor: pointer;
+  font-family: "Oswald", sans-serif; letter-spacing: .4px;
+}
+.mkt-fbtn.active { background: var(--accent); color: #06231f; border-color: transparent; font-weight: 700; }
+.mkt-refresh { margin-left: auto; font-size: 15px; padding: 6px 12px; }
+.mkt-list { display: flex; flex-direction: column; gap: 8px; }
+.mkt-row {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow);
+}
+.mkt-row.need { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0, 194, 168, .35), var(--shadow); }
+.mkt-main { display: flex; align-items: center; gap: 10px; }
+.mkt-code {
+  font-family: "Oswald", sans-serif; font-weight: 700; font-size: 13px;
+  background: #0a1424; border: 1px solid var(--line); color: var(--gold);
+  padding: 4px 8px; border-radius: 8px; white-space: nowrap;
+}
+.mkt-info { flex: 1; min-width: 0; }
+.mkt-name { font-size: 14px; font-weight: 600; }
+.mkt-need {
+  font-size: 10px; font-weight: 800; color: #06231f; background: var(--accent);
+  padding: 1px 6px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
+}
+.mkt-where { font-size: 12px; color: var(--muted); }
+.mkt-mode { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.mkt-mode-cambio { color: var(--accent); }
+.mkt-mode-venta { color: var(--gold); }
+.mkt-owner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+}
+.mkt-user { font-size: 12px; color: var(--muted); }
+.mkt-contact { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.mkt-nocontact { font-size: 12px; color: var(--muted); font-style: italic; }
+
 .album-tools { display: flex; justify-content: flex-end; padding: 0 2px 8px; }
 .tool-btn {
   background: var(--card-2); border: 1px solid var(--line); color: var(--text);

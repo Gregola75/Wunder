@@ -70,9 +70,20 @@ Ya integrado (requiere configurar Supabase, ver más abajo):
   cualquier dispositivo. Sigue funcionando **offline**; al entrar, fusiona lo
   local con lo de la nube (en cantidades se queda con el mayor, no pierdes nada).
 
+Ya integrado:
+
+- ✅ **Mercado entre usuarios** (pestaña 🛒): ves las repes que ofrecen otros
+  (Cambio/Venta + su contacto) y se resaltan las de cromos que te faltan 🎯.
+  Tus repes aparecen al marcarlas como Cambio/Venta en la pestaña Repes.
+
 En camino:
 
-- **Mercado / trueque**: ver las repetidas de otros usuarios, proponer
+- **Multi-colección**: Swalbum no será solo del Mundial 2026. Se añadirán más
+  álbumes/colecciones (p. ej. **La Liga 2026/2027**, **Adrenalyn XL**,
+  **Mega Cracks**…) y se podrá elegir la colección activa. *Nota técnica:* al
+  añadir varias colecciones habrá que **espaciar los códigos por colección**
+  (p. ej. `wc26:ARG7`) para que no choquen entre álbumes en la nube y el mercado.
+- **Mercado / trueque** (mejoras): ver las repetidas de otros usuarios, proponer
   cambios y vender cromos dentro de la app.
 - Emparejado automático: "tú tienes lo que a mí me falta y viceversa".
 - **Foto real del cromo (estado/condición)**: cada usuario podrá subir una

@@ -180,13 +180,62 @@
         setStatus(res.error ? "error al guardar" : "guardado ✓");
         if (res.error) console.warn(res.error);
       });
+      // Además, publicamos en el MERCADO (repes ofrecidas + contacto).
+      publishMarket(st);
     }
     if (immediate) doIt(); else pushTimer = setTimeout(doIt, 1500);
+  }
+
+  // Construye lo que se hace público: solo las repes marcadas como cambio/venta.
+  function buildPublic(state) {
+    state = state || {};
+    var counts = state.counts || {}, listings = state.listings || {};
+    var out = {};
+    Object.keys(listings).forEach(function (code) {
+      var spare = (counts[code] || 0) - 1;
+      if (spare >= 1) {
+        var l = listings[code] || {};
+        out[code] = { mode: l.type || "cambio", price: (l.price == null ? null : l.price), spare: spare };
+      }
+    });
+    return out;
+  }
+
+  function displayName() {
+    var email = (session && session.user && session.user.email) || "";
+    return email.split("@")[0] || "Coleccionista";
+  }
+
+  function publishMarket(st) {
+    if (!session) return;
+    var mrow = {
+      user_id: session.user.id,
+      display_name: displayName(),
+      contact: (st.settings && st.settings.contact) || null,
+      listings: buildPublic(st),
+      updated_at: new Date().toISOString(),
+    };
+    sb.from("market").upsert(mrow).then(function (res) {
+      // Si la tabla aún no existe, no rompemos nada: solo avisamos en consola.
+      if (res.error) console.warn("Mercado no disponible aún:", res.error.message);
+    });
   }
 
   window.Cloud = {
     onLocalChange: function () { if (session) push(false); },
     isOnline: function () { return !!session; },
+    myId: function () { return session && session.user ? session.user.id : null; },
+    // Lee las ofertas del resto de usuarios (no las tuyas).
+    fetchMarket: function () {
+      if (!session) return Promise.resolve([]);
+      return sb.from("market")
+        .select("user_id,display_name,contact,listings,updated_at")
+        .neq("user_id", session.user.id)
+        .then(function (res) {
+          if (res.error) { console.warn(res.error); throw res.error; }
+          return res.data || [];
+        });
+    },
   };
 
   // ---------- eventos (delegación, una sola vez) ----------

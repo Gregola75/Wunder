@@ -26,6 +26,15 @@
   const expanded = new Set();
   let allSectionKeys = []; // se llena en buildFlagbar()
 
+  // Índice rápido por código Panini (ARG7 -> cromo), para el Mercado.
+  const codeIndex = {};
+  A.stickers.forEach(function (s) { codeIndex[s.code] = s; });
+
+  // Filtros del Mercado.
+  let mktOnlyMissing = true;  // solo mostrar lo que me falta
+  let mktMode = "all";        // all | cambio | venta
+  let marketRows = null;      // caché de ofertas (para no recargar al filtrar)
+
   // Doble toque para marcar por primera vez (evita marcar cromos sin querer).
   let armedId = null;     // cromo "preparado" esperando el segundo toque
   let armedEl = null;     // su elemento en pantalla
@@ -315,6 +324,120 @@
     return '<span class="rar rar-comun">Común</span>';
   }
 
+  // ---------- Render: pestaña Mercado ----------
+  function renderMarket() {
+    const host = el("#content");
+    if (!window.Cloud || !window.Cloud.fetchMarket || !window.Cloud.isOnline()) {
+      host.innerHTML = '<div class="empty">El mercado necesita que inicies sesión y haya conexión. ☁️</div>';
+      return;
+    }
+    // Si ya tenemos las ofertas en caché, solo re-filtramos (sin recargar).
+    if (marketRows) { host.innerHTML = marketHTML(marketRows); return; }
+    host.innerHTML = '<div class="empty">Cargando mercado… ⏳</div>';
+    window.Cloud.fetchMarket().then(function (rows) {
+      marketRows = rows || [];
+      if (currentTab === "market") host.innerHTML = marketHTML(marketRows);
+    }).catch(function () {
+      host.innerHTML = '<div class="empty">No se pudo cargar el mercado. ¿Creaste la tabla en Supabase? Revisa también tu internet.</div>';
+    });
+  }
+
+  // Convierte un contacto en enlace útil (WhatsApp / email) si se puede.
+  function contactHTML(contact) {
+    const c = (contact || "").trim();
+    if (!c) return '<span class="mkt-nocontact">sin contacto</span>';
+    const digits = c.replace(/[^\d]/g, "");
+    if (/^\+?[\d\s\-()]{7,}$/.test(c) && digits.length >= 7) {
+      return '<a class="mkt-contact" href="https://wa.me/' + digits + '" target="_blank" rel="noopener">📱 ' + escapeHTML(c) + '</a>';
+    }
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) {
+      return '<a class="mkt-contact" href="mailto:' + encodeURIComponent(c) + '">✉️ ' + escapeHTML(c) + '</a>';
+    }
+    return '<span class="mkt-contact">💬 ' + escapeHTML(c) + '</span>';
+  }
+
+  function marketHTML(rows) {
+    // 1) Aplanar todas las ofertas: una fila por (usuario, cromo).
+    const offers = [];
+    rows.forEach(function (row) {
+      const listings = row.listings || {};
+      Object.keys(listings).forEach(function (code) {
+        const s = codeIndex[code];
+        if (!s) return; // código desconocido
+        const info = listings[code] || {};
+        const missing = Store.getCount(code) === 0;
+        offers.push({ s: s, code: code, owner: row, mode: info.mode || "cambio", price: info.price, spare: info.spare || 1, missing: missing });
+      });
+    });
+
+    // 2) Filtros (solo me falta / modo / búsqueda).
+    const filtered = offers.filter(function (o) {
+      if (mktOnlyMissing && !o.missing) return false;
+      if (mktMode !== "all" && o.mode !== mktMode) return false;
+      if (query) {
+        const team = o.s.teamId ? A.teams.find(function (t) { return t.id === o.s.teamId; }) : null;
+        const hay = (o.code + " " + nameOf(o.s) + " " + (team ? team.name : "") + " " + (o.owner.display_name || "")).toLowerCase();
+        if (hay.indexOf(query) === -1) return false;
+      }
+      return true;
+    });
+
+    // 3) Orden: primero lo que me falta, luego por código.
+    filtered.sort(function (a, b) {
+      if (a.missing !== b.missing) return a.missing ? -1 : 1;
+      return a.code.localeCompare(b.code);
+    });
+
+    // Barra de filtros (siempre visible).
+    const tools =
+      '<div class="mkt-tools">' +
+        '<button class="mkt-fbtn' + (mktOnlyMissing ? " active" : "") + '" data-mkt-missing>🎯 Lo que me falta</button>' +
+        '<button class="mkt-fbtn' + (mktMode === "all" ? " active" : "") + '" data-mkt-mode="all">Todo</button>' +
+        '<button class="mkt-fbtn' + (mktMode === "cambio" ? " active" : "") + '" data-mkt-mode="cambio">🔁 Cambio</button>' +
+        '<button class="mkt-fbtn' + (mktMode === "venta" ? " active" : "") + '" data-mkt-mode="venta">💲 Venta</button>' +
+        '<button class="mkt-fbtn mkt-refresh" data-mkt-refresh title="Actualizar">↻</button>' +
+      '</div>';
+
+    if (rows.length === 0) {
+      return tools + '<div class="empty">Aún no hay ofertas de otros usuarios. ¡Comparte Swalbum con tus amigos para empezar a intercambiar! 🤝</div>';
+    }
+    if (filtered.length === 0) {
+      return tools + '<div class="empty">No hay ofertas con estos filtros. Prueba a quitar "Lo que me falta" o cambiar de modo.</div>';
+    }
+
+    const missingCount = filtered.filter(function (o) { return o.missing; }).length;
+    let html = tools;
+    html += '<div class="list-summary">' + filtered.length + ' ofertas' +
+      (missingCount ? ' · <b>' + missingCount + '</b> de cromos que te faltan 🎯' : '') + '</div>';
+    html += '<div class="mkt-list">';
+    filtered.forEach(function (o) {
+      const s = o.s;
+      const team = s.teamId ? A.teams.find(function (t) { return t.id === s.teamId; }) : null;
+      const where = team ? (team.flag + " " + team.name) : (s.extra ? "🥤 Coca-Cola" : "✨ Especial");
+      const priceTxt = o.mode === "venta"
+        ? (o.price != null ? '💲 ' + o.price : '💲 Venta')
+        : '🔁 Cambio';
+      html +=
+        '<div class="mkt-row' + (o.missing ? " need" : "") + '">' +
+          '<div class="mkt-main">' +
+            '<div class="mkt-code">' + s.codeLabel + '</div>' +
+            '<div class="mkt-info">' +
+              '<div class="mkt-name">' + flagFor(s) + ' ' + escapeHTML(nameOf(s)) +
+                (o.missing ? ' <span class="mkt-need">te falta</span>' : '') + '</div>' +
+              '<div class="mkt-where">' + escapeHTML(where) + (o.spare > 1 ? ' · x' + o.spare : '') + '</div>' +
+            '</div>' +
+            '<div class="mkt-mode mkt-mode-' + o.mode + '">' + priceTxt + '</div>' +
+          '</div>' +
+          '<div class="mkt-owner">' +
+            '<span class="mkt-user">👤 ' + escapeHTML(o.owner.display_name || "Coleccionista") + '</span>' +
+            contactHTML(o.owner.contact) +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
   // ---------- Render principal ----------
   function render() {
     // cualquier re-dibujo cancela un "doble toque" a medias
@@ -344,6 +467,7 @@
     try {
       if (currentTab === "album") renderAlbum();
       else if (currentTab === "missing") renderMissing();
+      else if (currentTab === "market") renderMarket();
       else renderDuplicates();
     } catch (err) {
       // Nunca dejar la pantalla en blanco: mostrar el error para diagnosticar.
@@ -370,6 +494,8 @@
     document.querySelectorAll(".tab").forEach(function (tab) {
       tab.addEventListener("click", function () {
         currentTab = tab.dataset.tab;
+        // Al entrar al Mercado, pedimos datos frescos.
+        if (currentTab === "market") marketRows = null;
         window.scrollTo(0, 0);
         render();
       });
@@ -398,6 +524,11 @@
         if (pg && pg.classList.contains("collapsible")) toggleSection(pg);
         return;
       }
+      // Filtros del Mercado
+      if (e.target.closest("[data-mkt-refresh]")) { marketRows = null; renderMarket(); return; }
+      if (e.target.closest("[data-mkt-missing]")) { mktOnlyMissing = !mktOnlyMissing; renderMarket(); return; }
+      const mModeBtn = e.target.closest("[data-mkt-mode]");
+      if (mModeBtn) { mktMode = mModeBtn.getAttribute("data-mkt-mode"); renderMarket(); return; }
 
       const cell = e.target.closest(".cell");
       const row = e.target.closest(".dup-row");
