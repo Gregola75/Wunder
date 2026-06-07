@@ -73,7 +73,9 @@
       });
     }
     // No hay datos nuevos: ¿hay datos viejos que migrar?
-    const old = read(OLD_KEY);
+    // OJO: el formato viejo (OLD_KEY) es SOLO del Mundial 2026. No debe cargarse
+    // en otras ediciones (cada colección empieza vacía / 0% si no tienes nada).
+    const old = ACTIVE === "wc2026" ? read(OLD_KEY) : null;
     if (old && (old.counts || old.names)) {
       const migrated = migrateOld(old);
       try { localStorage.setItem(KEY, JSON.stringify(migrated)); } catch (e) {}
