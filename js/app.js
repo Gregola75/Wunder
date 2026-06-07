@@ -268,9 +268,18 @@
       t.classList.toggle("active", t.dataset.tab === currentTab);
     });
 
-    if (currentTab === "album") renderAlbum();
-    else if (currentTab === "missing") renderMissing();
-    else renderDuplicates();
+    try {
+      if (currentTab === "album") renderAlbum();
+      else if (currentTab === "missing") renderMissing();
+      else renderDuplicates();
+    } catch (err) {
+      // Nunca dejar la pantalla en blanco: mostrar el error para diagnosticar.
+      el("#content").innerHTML =
+        '<div class="empty">Ups, ocurrió un error al dibujar los cromos.<br><br>' +
+        '<small>' + escapeHTML(String(err && err.message || err)) + '</small><br><br>' +
+        'Prueba a recargar la página.</div>';
+      console.error(err);
+    }
   }
 
   // ---------- Acciones sobre cromos ----------
