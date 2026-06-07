@@ -20,32 +20,34 @@
 (function () {
   "use strict";
 
-  // --- Apertura (9 cromos foil) ---
-  const OPENING = [
-    "Logo Panini",
-    "Emblema oficial FIFA 2026",
-    "Mascotas oficiales",
-    "Eslogan oficial",
-    "Balón oficial",
-    "Trofeo de la Copa Mundial",
-    "Anfitrión: Canadá",
-    "Anfitrión: México",
-    "Anfitrión: Estados Unidos",
+  // --- Apertura (9 cromos foil): cromo 00 + FWC 1..8 ---
+  // Confirmado: el cromo 00 es el primero; FWC 1 y FWC 2 son el Trofeo.
+  // (Los nombres son editables: tócalos dos veces para ajustarlos a tu álbum.)
+  const OPENING_00 = "Apertura (00)"; // primer cromo del álbum
+  const OPENING_FWC = [
+    "Trofeo de la Copa Mundial (1)", // FWC 1
+    "Trofeo de la Copa Mundial (2)", // FWC 2
+    "Emblema oficial FIFA 2026",     // FWC 3
+    "Mascotas oficiales",            // FWC 4
+    "Balón oficial",                 // FWC 5
+    "Eslogan oficial",               // FWC 6
+    "Anfitrión: Canadá",             // FWC 7
+    "Anfitrión: México / EE. UU.",   // FWC 8
   ];
 
-  // --- FIFA Museum (11 cromos foil) ---
+  // --- FIFA Museum (11 cromos foil): FWC 9..19 ---
   const MUSEUM = [
-    "Leyenda Mundial 1",
-    "Leyenda Mundial 2",
-    "Leyenda Mundial 3",
-    "Leyenda Mundial 4",
-    "Leyenda Mundial 5",
-    "Leyenda Mundial 6",
-    "Leyenda Mundial 7",
-    "Leyenda Mundial 8",
-    "Leyenda Mundial 9",
-    "Leyenda Mundial 10",
-    "Leyenda Mundial 11",
+    "Leyenda / Campeón 1",
+    "Leyenda / Campeón 2",
+    "Leyenda / Campeón 3",
+    "Leyenda / Campeón 4",
+    "Leyenda / Campeón 5",
+    "Leyenda / Campeón 6",
+    "Leyenda / Campeón 7",
+    "Leyenda / Campeón 8",
+    "Leyenda / Campeón 9",
+    "Leyenda / Campeón 10",
+    "Leyenda / Campeón 11",
   ];
 
   // --- Extras exclusivos Coca-Cola (CC1..CC12) ---
@@ -154,33 +156,40 @@
     no += 1;
     sticker.no = no;
     sticker.id = "s" + no;
-    // Código Panini, p.ej. "FWC" + "7" -> "FWC7" / etiqueta "FWC 7"
-    sticker.code = sticker.prefix + sticker.pos;
-    sticker.codeLabel = sticker.prefix + " " + sticker.pos;
+    // Código Panini, p.ej. "FWC" + "7" -> "FWC7" / etiqueta "FWC 7".
+    // Si el cromo ya trae un código fijo (p.ej. "00"), se respeta.
+    if (!sticker.code) {
+      sticker.code = sticker.prefix + sticker.pos;
+      sticker.codeLabel = sticker.prefix + " " + sticker.pos;
+    }
     stickers.push(sticker);
     return sticker;
   }
 
-  // Apertura + FIFA Museum comparten la numeración FWC (FWC 1..20):
-  //   Apertura     -> FWC 1..9
-  //   FIFA Museum  -> FWC 10..20
+  // Numeración de especiales:
+  //   Apertura     -> 00, FWC 1..8
+  //   FIFA Museum  -> FWC 9..19
   let fwc = 0;
 
-  // Apertura
+  // Apertura: cromo 00 + FWC 1..8
   const openingIds = [];
-  OPENING.forEach(function (name) {
+  openingIds.push(add({
+    section: "opening", role: "special", name: OPENING_00, foil: true,
+    code: "00", codeLabel: "00", prefix: "", pos: 0,
+  }).id);
+  OPENING_FWC.forEach(function (name) {
     fwc += 1;
     openingIds.push(add({ section: "opening", role: "special", name: name, foil: true, prefix: "FWC", pos: fwc }).id);
   });
-  sections.push({ key: "opening", title: "Apertura", subtitle: "Cromos foil · FWC", stickerIds: openingIds });
+  sections.push({ key: "opening", title: "Apertura", subtitle: "Cromos foil · 00 + FWC", stickerIds: openingIds });
 
-  // FIFA Museum
+  // FIFA Museum: FWC 9..19
   const museumIds = [];
   MUSEUM.forEach(function (name) {
     fwc += 1;
     museumIds.push(add({ section: "museum", role: "special", name: name, foil: true, prefix: "FWC", pos: fwc }).id);
   });
-  sections.push({ key: "museum", title: "FIFA Museum", subtitle: "Leyendas · Cromos foil · FWC", stickerIds: museumIds });
+  sections.push({ key: "museum", title: "FIFA Museum", subtitle: "Leyendas · Cromos foil · FWC 9-19", stickerIds: museumIds });
 
   // Selecciones
   Object.keys(GROUPS).forEach(function (groupKey) {
