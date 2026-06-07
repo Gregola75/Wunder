@@ -36,18 +36,19 @@
   ];
 
   // --- FIFA Museum (11 cromos foil): FWC 9..19 ---
+  // Campeones históricos (confirmado: FWC 9 = Italia 1934).
   const MUSEUM = [
-    "Leyenda / Campeón 1",
-    "Leyenda / Campeón 2",
-    "Leyenda / Campeón 3",
-    "Leyenda / Campeón 4",
-    "Leyenda / Campeón 5",
-    "Leyenda / Campeón 6",
-    "Leyenda / Campeón 7",
-    "Leyenda / Campeón 8",
-    "Leyenda / Campeón 9",
-    "Leyenda / Campeón 10",
-    "Leyenda / Campeón 11",
+    "Italia 1934",        // FWC 9
+    "Uruguay 1950",       // FWC 10
+    "Alemania (RFA) 1954",// FWC 11
+    "Brasil 1962",        // FWC 12
+    "Alemania (RFA) 1974",// FWC 13
+    "Argentina 1986",     // FWC 14
+    "Brasil 1994",        // FWC 15
+    "Brasil 2002",        // FWC 16
+    "Italia 2006",        // FWC 17
+    "Alemania 2014",      // FWC 18
+    "Argentina 2022",     // FWC 19
   ];
 
   // --- Extras exclusivos Coca-Cola (CC1..CC12) ---
