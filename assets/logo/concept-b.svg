@@ -1,0 +1,30 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Swalbum logo concepto B">
+  <defs>
+    <linearGradient id="bgB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00c2a8"/>
+      <stop offset="1" stop-color="#0b6b5e"/>
+    </linearGradient>
+    <linearGradient id="goldB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="1" stop-color="#ffd23f"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bgB)"/>
+  <rect x="3" y="3" width="250" height="250" rx="53" fill="none" stroke="#ffffff" stroke-opacity=".25" stroke-width="2"/>
+
+  <!-- Monograma S grande -->
+  <text x="128" y="180" text-anchor="middle"
+        font-family="Oswald, Arial, sans-serif" font-weight="700"
+        font-size="190" fill="url(#goldB)">S</text>
+
+  <!-- Balón como acento (punto de la S) -->
+  <circle cx="186" cy="74" r="20" fill="#0b1626"/>
+  <polygon points="186,64 194,71 191,81 181,81 178,71" fill="#eaf1ff"/>
+  <g stroke="#eaf1ff" stroke-width="2.4" stroke-linecap="round">
+    <line x1="186" y1="64" x2="186" y2="55"/>
+    <line x1="194" y1="71" x2="203" y2="68"/>
+    <line x1="191" y1="81" x2="196" y2="90"/>
+    <line x1="181" y1="81" x2="176" y2="90"/>
+    <line x1="178" y1="71" x2="169" y2="68"/>
+  </g>
+</svg>
