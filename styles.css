@@ -143,8 +143,9 @@ body.locked .app-footer { display: none; }
   border-radius: 20px; box-shadow: var(--shadow);
   padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; text-align: center;
 }
-.welcome-logo { width: 110px; height: 110px; margin: 0 auto; display: block; }
+.welcome-logo { width: min(78%, 280px); height: auto; margin: 2px auto 4px; display: block; }
 .welcome-card h1 { margin: 0; font-size: 26px; font-style: italic; letter-spacing: 1px; }
+.welcome-feats .fk { color: var(--accent); font-weight: 800; margin-right: 8px; }
 .welcome-tag { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .welcome-feats { list-style: none; padding: 0; margin: 2px 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
 .welcome-feats li { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
@@ -192,6 +193,7 @@ body.locked .header-fab { display: none; }
   font-family: "Oswald", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 .brand h1 { text-transform: uppercase; letter-spacing: .6px; font-weight: 700; font-style: italic; }
+.tabs .tab { text-transform: uppercase; letter-spacing: .8px; font-size: 13px; }
 .page-title { letter-spacing: .3px; }
 .group-label { text-transform: uppercase; letter-spacing: 1.6px; }
 

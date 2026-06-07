@@ -8,29 +8,28 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=18" />
-  <link rel="icon" href="assets/logo/swalbum-icon.svg" />
+  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
   <!-- Pantalla de bienvenida (hay que entrar para usar la app) -->
   <div class="welcome" id="welcome" hidden>
     <div class="welcome-card">
-      <img class="welcome-logo" src="assets/logo/swalbum-icon.svg" alt="Swalbum" />
-      <h1>SWALBUM</h1>
+      <img class="welcome-logo" src="assets/logo/swalbum-lockup.png" alt="Swalbum" />
       <p class="welcome-tag">Tu álbum del <b>Mundial 2026</b>: controla qué cromos <b>tienes</b>, cuáles te <b>faltan</b> y tus <b>repes</b> para cambiar o vender con otros.</p>
       <ul class="welcome-feats">
-        <li>📖 Los 980 cromos, como en el álbum oficial</li>
-        <li>🔁 Tus repetidas listas para cambiar o vender</li>
-        <li>☁️ Tu álbum guardado y disponible en cualquier dispositivo</li>
+        <li><span class="fk">✓</span> Los 980 cromos, como en el álbum oficial</li>
+        <li><span class="fk">✓</span> Tus repetidas listas para cambiar o vender</li>
+        <li><span class="fk">✓</span> Tu álbum guardado en cualquier dispositivo</li>
       </ul>
       <div class="welcome-auth" id="welcome-auth"></div>
-      <p class="welcome-foot">Swap + Álbum · Gratis para coleccionistas ⚽</p>
+      <p class="welcome-foot">Swap + Álbum · Plataforma de coleccionistas</p>
     </div>
   </div>
 
   <header class="app-header">
     <div class="brand">
-      <img class="brand-logo" src="assets/logo/swalbum-icon.svg" alt="Swalbum" />
+      <img class="brand-logo" src="assets/logo/swalbum-mark.png" alt="Swalbum" />
       <div>
         <h1>Swalbum</h1>
         <p class="brand-sub"><span class="brand-badge">MUNDIAL 2026</span> 🇨🇦 🇺🇸 🇲🇽 · 980 cromos</p>
@@ -61,10 +60,10 @@
     </div>
 
     <nav class="tabs">
-      <button class="tab active" data-tab="album">📖 Álbum</button>
-      <button class="tab" data-tab="missing">🔍 Faltan</button>
-      <button class="tab" data-tab="duplicates">🔁 Repes</button>
-      <button class="tab" data-tab="market">🛒 Mercado</button>
+      <button class="tab active" data-tab="album">Álbum</button>
+      <button class="tab" data-tab="missing">Faltan</button>
+      <button class="tab" data-tab="duplicates">Repes</button>
+      <button class="tab" data-tab="market">Mercado</button>
     </nav>
 
     <!-- Atajo: banderas para saltar directo a cada selección -->
@@ -99,12 +98,12 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=18"></script>
-  <script src="js/players.js?v=18"></script>
-  <script src="js/data.js?v=18"></script>
-  <script src="js/storage.js?v=18"></script>
-  <script src="js/cloud.js?v=18"></script>
-  <script src="js/app.js?v=18"></script>
+  <script src="js/config.js?v=19"></script>
+  <script src="js/players.js?v=19"></script>
+  <script src="js/data.js?v=19"></script>
+  <script src="js/storage.js?v=19"></script>
+  <script src="js/cloud.js?v=19"></script>
+  <script src="js/app.js?v=19"></script>
   <script>
     // Menú de opciones como hoja inferior con fondo oscuro
     (function () {
