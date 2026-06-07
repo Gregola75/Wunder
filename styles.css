@@ -162,9 +162,27 @@ body.locked .app-footer { display: none; }
 .welcome-auth .acc-msg.err { color: var(--danger); }
 .welcome-foot { margin: 0; color: var(--muted); font-size: 12px; }
 
-/* ---------- Cabecera retráctil (se esconde al deslizar) ---------- */
-.app-header { transition: transform .25s ease; will-change: transform; }
-.app-header.header-hidden { transform: translateY(-100%); }
+/* ---------- Cabecera plegable (con botón flotante) ---------- */
+body.header-collapsed .app-header { display: none; }
+
+.header-fab {
+  position: fixed; right: 14px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 90; width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #06231f;
+  border: none; box-shadow: var(--shadow);
+  font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; opacity: .95;
+}
+.header-fab:active { transform: scale(.95); }
+body.locked .header-fab { display: none; }
+
+/* ---------- Aviso de "toca otra vez" (doble toque) ---------- */
+.cell.arming {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px rgba(0, 194, 168, .25);
+}
+.cell .st-arm { color: var(--accent); font-weight: 700; }
 
 /* ---------- Progreso ---------- */
 .progress-box {

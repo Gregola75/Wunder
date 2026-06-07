@@ -21,6 +21,23 @@
   let currentTab = "album";
   let query = "";
 
+  // Doble toque para marcar por primera vez (evita marcar cromos sin querer).
+  let armedId = null;     // cromo "preparado" esperando el segundo toque
+  let armedEl = null;     // su elemento en pantalla
+  let armTimer = null;    // temporizador para desarmar solo
+  const ARM_MS = 2000;    // ventana para el segundo toque
+
+  function clearArm() {
+    if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+    if (armedEl) {
+      armedEl.classList.remove("arming");
+      const se = armedEl.querySelector(".cromo-state");
+      if (se) se.innerHTML = '<span class="st-no">Me falta</span>';
+    }
+    armedEl = null;
+    armedId = null;
+  }
+
   const el = function (sel) { return document.querySelector(sel); };
 
   // ---------- Estadísticas ----------
@@ -281,6 +298,10 @@
 
   // ---------- Render principal ----------
   function render() {
+    // cualquier re-dibujo cancela un "doble toque" a medias
+    armedId = null; armedEl = null;
+    if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+
     // estadísticas de cabecera
     const st = stats();
     const pct = Math.round((st.owned / st.total) * 100);
@@ -374,10 +395,31 @@
         render();
         return;
       }
-      // Click en el cuerpo del cromo (sólo en vista álbum / faltan) => sumar 1
+      // Click en el cuerpo del cromo (vista álbum / faltan).
       if (cell) {
-        Store.increment(id);
-        render();
+        const count = Store.getCount(id);
+        if (count === 0) {
+          // PRIMERA vez: pedimos doble toque para no marcar sin querer.
+          if (armedId === id) {
+            // segundo toque a tiempo -> marcar
+            armedId = null; armedEl = null;
+            if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+            Store.increment(id);
+            render();
+          } else {
+            // primer toque -> "preparar" el cromo y avisar
+            clearArm();
+            armedId = id; armedEl = cell;
+            cell.classList.add("arming");
+            const se = cell.querySelector(".cromo-state");
+            if (se) se.innerHTML = '<span class="st-arm">Toca otra vez ✓</span>';
+            armTimer = setTimeout(clearArm, ARM_MS);
+          }
+        } else {
+          // Ya la tienes: un toque suma una repetida.
+          Store.increment(id);
+          render();
+        }
       }
     });
 
@@ -437,30 +479,22 @@
     e.target.value = "";
   }
 
-  // ---------- Cabecera retráctil ----------
-  // Al deslizar hacia abajo, la cabecera se esconde para dar espacio a los
-  // cromos; al subir un poco, reaparece. Así no estorba con tantas barajitas.
-  function setupHeaderAutohide() {
-    const header = document.querySelector(".app-header");
-    if (!header) return;
-    let lastY = window.scrollY || 0;
-    let ticking = false;
-
-    function update() {
-      ticking = false;
-      const y = window.scrollY || window.pageYOffset || 0;
-      // Cerca de arriba: siempre visible.
-      if (y < 90) { header.classList.remove("header-hidden"); lastY = y; return; }
-      const delta = y - lastY;
-      if (Math.abs(delta) < 8) return;        // ignora micro-movimientos
-      if (delta > 0) header.classList.add("header-hidden");   // bajando -> ocultar
-      else header.classList.remove("header-hidden");          // subiendo -> mostrar
-      lastY = y;
+  // ---------- Cabecera plegable (con botón) ----------
+  // Un botón flotante esconde/muestra la cabecera cuando TÚ quieras, para
+  // ganar espacio sin movimientos automáticos que despisten al deslizar.
+  function setupHeaderToggle() {
+    const fab = document.getElementById("header-toggle");
+    if (!fab) return;
+    function sync() {
+      const collapsed = document.body.classList.contains("header-collapsed");
+      fab.textContent = collapsed ? "▾" : "▴";
+      fab.title = collapsed ? "Mostrar la barra superior" : "Ocultar la barra superior";
     }
-
-    window.addEventListener("scroll", function () {
-      if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
-    }, { passive: true });
+    fab.addEventListener("click", function () {
+      document.body.classList.toggle("header-collapsed");
+      sync();
+    });
+    sync();
   }
 
   // Exponemos render() para que la nube refresque la pantalla tras sincronizar.
@@ -470,6 +504,6 @@
   document.addEventListener("DOMContentLoaded", function () {
     wireEvents();
     render();
-    setupHeaderAutohide();
+    setupHeaderToggle();
   });
 })();
