@@ -707,6 +707,63 @@
     window.scrollTo({ top: top, behavior: "smooth" });
   }
 
+  // ---------- Colecciones (familias → ediciones) ----------
+  function setupCollections() {
+    const C = window.COLLECTIONS;
+    const btn = document.getElementById("collection-btn");
+    const overlay = document.getElementById("collections");
+    const body = document.getElementById("coll-body");
+    const close = document.getElementById("coll-close");
+    if (!C || !btn || !overlay || !body) return;
+
+    // Etiqueta del botón con la colección activa.
+    const act = C.find(C.active);
+    const label = document.getElementById("coll-active-label");
+    if (label && act) label.textContent = act.emoji + " " + act.title;
+
+    function renderList() {
+      let html = "";
+      C.families.forEach(function (f) {
+        html += '<div class="coll-fam">' + f.emoji + " " + escapeHTML(f.name) + "</div>";
+        f.editions.forEach(function (e) {
+          const isActive = e.id === C.active;
+          const ready = e.status === "ready";
+          const chip = isActive
+            ? '<span class="ci-chip active">✓ Activa</span>'
+            : (ready ? '<span class="ci-chip ready">Disponible</span>' : '<span class="ci-chip soon">Próximamente</span>');
+          html +=
+            '<button class="coll-item' + (ready ? "" : " is-soon") + (isActive ? " is-active" : "") + '" data-coll="' + e.id + '" data-ready="' + (ready ? "1" : "0") + '">' +
+              '<span class="ci-text"><span class="ci-title">' + escapeHTML(e.title) + '</span>' +
+                '<span class="ci-sub">' + escapeHTML(e.sub) + '</span></span>' +
+              chip +
+            '</button>';
+        });
+      });
+      html += '<p class="coll-note">¿Echas en falta una colección? Dínosla y la añadimos. 🙌</p>';
+      body.innerHTML = html;
+    }
+
+    function open() { renderList(); overlay.hidden = false; }
+    function hide() { overlay.hidden = true; }
+
+    btn.addEventListener("click", open);
+    close.addEventListener("click", hide);
+    body.addEventListener("click", function (e) {
+      const it = e.target.closest("[data-coll]");
+      if (!it) return;
+      const id = it.getAttribute("data-coll");
+      const ready = it.getAttribute("data-ready") === "1";
+      if (!ready) {
+        it.classList.add("shake");
+        setTimeout(function () { it.classList.remove("shake"); }, 500);
+        return; // "Próximamente": aún no disponible
+      }
+      if (id === C.active) { hide(); return; }
+      C.setActive(id);
+      location.reload(); // recarga con la colección elegida
+    });
+  }
+
   // ---------- Cabecera plegable (con botón) ----------
   // Un botón flotante esconde/muestra la cabecera cuando TÚ quieras, para
   // ganar espacio sin movimientos automáticos que despisten al deslizar.
@@ -734,5 +791,6 @@
     buildFlagbar();
     render();
     setupHeaderToggle();
+    setupCollections();
   });
 })();

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20" />
+  <link rel="stylesheet" href="styles.css?v=21" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -38,6 +38,10 @@
         <button class="menu-btn" id="menu-toggle" title="Opciones">⋯</button>
       </div>
     </div>
+    <button class="coll-switch" id="collection-btn">
+      <span id="coll-active-label">🌍 Mundial 2026</span>
+      <span class="coll-switch-act">Cambiar ▾</span>
+    </button>
     <div class="cloud-status" id="cloud-status"></div>
 
     <div class="progress-box">
@@ -97,13 +101,24 @@
     </div>
   </div>
 
+  <!-- Pantalla de Colecciones (familias → ediciones) -->
+  <div class="collections" id="collections" hidden>
+    <div class="coll-head">
+      <h2>Colecciones</h2>
+      <button class="coll-x" id="coll-close" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="coll-intro">Elige la colección con la que quieres trabajar. Iremos añadiendo más con datos verificados de fuentes fiables.</p>
+    <div class="coll-body" id="coll-body"></div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=20"></script>
-  <script src="js/players.js?v=20"></script>
-  <script src="js/data.js?v=20"></script>
-  <script src="js/storage.js?v=20"></script>
-  <script src="js/cloud.js?v=20"></script>
-  <script src="js/app.js?v=20"></script>
+  <script src="js/config.js?v=21"></script>
+  <script src="js/collections.js?v=21"></script>
+  <script src="js/players.js?v=21"></script>
+  <script src="js/data.js?v=21"></script>
+  <script src="js/storage.js?v=21"></script>
+  <script src="js/cloud.js?v=21"></script>
+  <script src="js/app.js?v=21"></script>
   <script>
     // Menú de opciones como hoja inferior con fondo oscuro
     (function () {
