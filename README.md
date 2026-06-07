@@ -1,6 +1,7 @@
-# ⚽ Mi Álbum Mundial 2026
+# ⚽ Swalbum — Mundial 2026
 
-App web (móvil + PC) para gestionar tu **álbum Panini de la Copa Mundial 2026**:
+**Swalbum** (*swap + álbum*) es una app web (móvil + PC) para gestionar tu
+**álbum Panini de la Copa Mundial 2026**:
 saber qué cromos **tienes**, cuáles te **faltan** y cuáles tienes **repetidos**
 para luego **cambiar o vender** con otros usuarios.
 
