@@ -65,6 +65,13 @@ js/app.js         # lógica de la interfaz (álbum, faltan, repes)
 - **Mercado / trueque**: ver las repetidas de otros usuarios, proponer
   cambios y vender cromos dentro de la app.
 - Emparejado automático: "tú tienes lo que a mí me falta y viceversa".
+- **Foto real del cromo (estado/condición)**: cada usuario podrá subir una
+  foto de su propio cromo (su producto) para mostrar el estado —clave en
+  colecciones antiguas (2010, 2014, 2018…)—. La foto se comprime y se guarda
+  en la nube para que el comprador/cambista la vea antes de cerrar el trato.
+  Es contenido del usuario (foto de su producto), no un escaneo oficial.
+- **Colecciones antiguas**: añadir otros álbumes (Mundiales pasados,
+  Adrenalyn XL…) para ser un punto de referencia de coleccionistas.
 
 Esto requiere un servidor y base de datos; la app actual ya está estructurada
 para conectarse a ese backend cuando lo añadamos.
