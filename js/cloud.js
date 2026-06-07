@@ -72,6 +72,9 @@
         '<div class="acc-email">' + esc(session.user.email || "") + '</div>' +
         '<div class="acc-status" id="acc-status">Estado: ' + esc(statusText) + '</div>' +
         '<button id="acc-signout" class="sheet-close">Cerrar sesión</button>';
+      // Conexión directa (la hoja de opciones frena los clics globales).
+      var so = document.getElementById("acc-signout");
+      if (so) so.addEventListener("click", signOut);
     } else {
       b.innerHTML = '<div class="acc-help">No has iniciado sesión.</div>';
     }
@@ -120,7 +123,11 @@
     }).catch(function () { msg(p, "No se pudo conectar. Revisa tu internet.", true); });
   }
 
-  function signOut() { sb.auth.signOut(); }
+  function signOut() {
+    var bd = document.getElementById("menu-backdrop");
+    if (bd) bd.hidden = true; // cierra el menú para que no tape la bienvenida
+    sb.auth.signOut();
+  }
 
   // ---------- sincronización ----------
   function localState() {

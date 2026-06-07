@@ -342,53 +342,67 @@
     });
   }
 
-  // Convierte un contacto en enlace útil (WhatsApp / email) si se puede.
-  function contactHTML(contact) {
+  // Botón grande de contacto (WhatsApp / email / texto).
+  function contactBtnHTML(contact) {
     const c = (contact || "").trim();
-    if (!c) return '<span class="mkt-nocontact">sin contacto</span>';
+    if (!c) return '<span class="ucard-nocontact">sin contacto</span>';
     const digits = c.replace(/[^\d]/g, "");
     if (/^\+?[\d\s\-()]{7,}$/.test(c) && digits.length >= 7) {
-      return '<a class="mkt-contact" href="https://wa.me/' + digits + '" target="_blank" rel="noopener">📱 ' + escapeHTML(c) + '</a>';
+      return '<a class="ucard-contact wa" href="https://wa.me/' + digits + '" target="_blank" rel="noopener">💬 Contactar</a>';
     }
     if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) {
-      return '<a class="mkt-contact" href="mailto:' + encodeURIComponent(c) + '">✉️ ' + escapeHTML(c) + '</a>';
+      return '<a class="ucard-contact" href="mailto:' + encodeURIComponent(c) + '">✉️ Contactar</a>';
     }
-    return '<span class="mkt-contact">💬 ' + escapeHTML(c) + '</span>';
+    return '<span class="ucard-contact plain">💬 ' + escapeHTML(c) + '</span>';
+  }
+
+  // Mini-cromo para el mercado (banderita + código + modo/precio).
+  function miniCromo(o) {
+    const s = o.s;
+    const mode = o.mode === "venta" ? ("💲" + (o.price != null ? o.price : "")) : "🔁";
+    return (
+      '<div class="mc' + (o.missing ? " need" : "") + '" title="' + escapeHTML(nameOf(s)) + '">' +
+        (o.missing ? '<span class="mc-need">te falta</span>' : "") +
+        '<div class="mc-flag">' + flagFor(s) + '</div>' +
+        '<div class="mc-code">' + s.codeLabel + '</div>' +
+        '<div class="mc-mode mkt-mode-' + o.mode + '">' + mode + '</div>' +
+      '</div>'
+    );
   }
 
   function marketHTML(rows) {
-    // 1) Aplanar todas las ofertas: una fila por (usuario, cromo).
-    const offers = [];
+    // Agrupamos por usuario: una tarjeta por persona con sus cromos en oferta.
+    const users = [];
     rows.forEach(function (row) {
       const listings = row.listings || {};
+      const items = [];
+      let needCount = 0;
       Object.keys(listings).forEach(function (code) {
         const s = codeIndex[code];
-        if (!s) return; // código desconocido
+        if (!s) return;
         const info = listings[code] || {};
+        const mode = info.mode || "cambio";
         const missing = Store.getCount(code) === 0;
-        offers.push({ s: s, code: code, owner: row, mode: info.mode || "cambio", price: info.price, spare: info.spare || 1, missing: missing });
+        if (mktMode !== "all" && mode !== mktMode) return;
+        if (mktOnlyMissing && !missing) return;
+        if (query) {
+          const team = s.teamId ? A.teams.find(function (t) { return t.id === s.teamId; }) : null;
+          const hay = (code + " " + nameOf(s) + " " + (team ? team.name : "") + " " + (row.display_name || "")).toLowerCase();
+          if (hay.indexOf(query) === -1) return;
+        }
+        if (missing) needCount += 1;
+        items.push({ s: s, code: code, mode: mode, price: info.price, spare: info.spare || 1, missing: missing });
       });
+      if (items.length === 0) return;
+      items.sort(function (a, b) { if (a.missing !== b.missing) return a.missing ? -1 : 1; return a.code.localeCompare(b.code); });
+      users.push({ row: row, items: items, needCount: needCount });
+    });
+    // Primero quien tiene más cromos que te faltan.
+    users.sort(function (a, b) {
+      if (a.needCount !== b.needCount) return b.needCount - a.needCount;
+      return (a.row.display_name || "").localeCompare(b.row.display_name || "");
     });
 
-    // 2) Filtros (solo me falta / modo / búsqueda).
-    const filtered = offers.filter(function (o) {
-      if (mktOnlyMissing && !o.missing) return false;
-      if (mktMode !== "all" && o.mode !== mktMode) return false;
-      if (query) {
-        const team = o.s.teamId ? A.teams.find(function (t) { return t.id === o.s.teamId; }) : null;
-        const hay = (o.code + " " + nameOf(o.s) + " " + (team ? team.name : "") + " " + (o.owner.display_name || "")).toLowerCase();
-        if (hay.indexOf(query) === -1) return false;
-      }
-      return true;
-    });
-
-    // 3) Orden: primero lo que me falta, luego por código.
-    filtered.sort(function (a, b) {
-      if (a.missing !== b.missing) return a.missing ? -1 : 1;
-      return a.code.localeCompare(b.code);
-    });
-
-    // Barra de filtros (siempre visible).
     const tools =
       '<div class="mkt-tools">' +
         '<button class="mkt-fbtn' + (mktOnlyMissing ? " active" : "") + '" data-mkt-missing>🎯 Lo que me falta</button>' +
@@ -399,42 +413,31 @@
       '</div>';
 
     if (rows.length === 0) {
-      return tools + '<div class="empty">Aún no hay ofertas de otros usuarios. ¡Comparte Swalbum con tus amigos para empezar a intercambiar! 🤝</div>';
+      return tools + '<div class="empty">Aún no hay ofertas de otros coleccionistas.<br><br>¡Comparte <b>Swalbum</b> con tus amigos para empezar a intercambiar! 🤝</div>';
     }
-    if (filtered.length === 0) {
-      return tools + '<div class="empty">No hay ofertas con estos filtros. Prueba a quitar "Lo que me falta" o cambiar de modo.</div>';
+    if (users.length === 0) {
+      return tools + '<div class="empty">No hay ofertas con estos filtros.<br>Prueba a desactivar <b>🎯 Lo que me falta</b> o cambiar de modo.</div>';
     }
 
-    const missingCount = filtered.filter(function (o) { return o.missing; }).length;
+    const totalNeed = users.reduce(function (n, u) { return n + u.needCount; }, 0);
     let html = tools;
-    html += '<div class="list-summary">' + filtered.length + ' ofertas' +
-      (missingCount ? ' · <b>' + missingCount + '</b> de cromos que te faltan 🎯' : '') + '</div>';
-    html += '<div class="mkt-list">';
-    filtered.forEach(function (o) {
-      const s = o.s;
-      const team = s.teamId ? A.teams.find(function (t) { return t.id === s.teamId; }) : null;
-      const where = team ? (team.flag + " " + team.name) : (s.extra ? "🥤 Coca-Cola" : "✨ Especial");
-      const priceTxt = o.mode === "venta"
-        ? (o.price != null ? '💲 ' + o.price : '💲 Venta')
-        : '🔁 Cambio';
+    html += '<div class="mkt-hero">' +
+      (totalNeed
+        ? '🎯 <b>' + totalNeed + '</b> cromos que te faltan están disponibles, en <b>' + users.length + '</b> coleccionista(s)'
+        : 'Hay <b>' + users.length + '</b> coleccionista(s) con ofertas') +
+      '</div>';
+    users.forEach(function (u) {
+      const row = u.row;
       html +=
-        '<div class="mkt-row' + (o.missing ? " need" : "") + '">' +
-          '<div class="mkt-main">' +
-            '<div class="mkt-code">' + s.codeLabel + '</div>' +
-            '<div class="mkt-info">' +
-              '<div class="mkt-name">' + flagFor(s) + ' ' + escapeHTML(nameOf(s)) +
-                (o.missing ? ' <span class="mkt-need">te falta</span>' : '') + '</div>' +
-              '<div class="mkt-where">' + escapeHTML(where) + (o.spare > 1 ? ' · x' + o.spare : '') + '</div>' +
-            '</div>' +
-            '<div class="mkt-mode mkt-mode-' + o.mode + '">' + priceTxt + '</div>' +
+        '<div class="ucard">' +
+          '<div class="ucard-head">' +
+            '<div class="ucard-id">👤 ' + escapeHTML(row.display_name || "Coleccionista") +
+              (u.needCount ? ' <span class="ucard-need">🎯 ' + u.needCount + ' te faltan</span>' : "") + '</div>' +
+            contactBtnHTML(row.contact) +
           '</div>' +
-          '<div class="mkt-owner">' +
-            '<span class="mkt-user">👤 ' + escapeHTML(o.owner.display_name || "Coleccionista") + '</span>' +
-            contactHTML(o.owner.contact) +
-          '</div>' +
+          '<div class="mc-grid">' + u.items.map(miniCromo).join("") + '</div>' +
         '</div>';
     });
-    html += '</div>';
     return html;
   }
 

@@ -248,35 +248,50 @@ body.locked .header-fab { display: none; }
 }
 .mkt-fbtn.active { background: var(--accent); color: #06231f; border-color: transparent; font-weight: 700; }
 .mkt-refresh { margin-left: auto; font-size: 15px; padding: 6px 12px; }
-.mkt-list { display: flex; flex-direction: column; gap: 8px; }
-.mkt-row {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow);
-}
-.mkt-row.need { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0, 194, 168, .35), var(--shadow); }
-.mkt-main { display: flex; align-items: center; gap: 10px; }
-.mkt-code {
-  font-family: "Oswald", sans-serif; font-weight: 700; font-size: 13px;
-  background: #0a1424; border: 1px solid var(--line); color: var(--gold);
-  padding: 4px 8px; border-radius: 8px; white-space: nowrap;
-}
-.mkt-info { flex: 1; min-width: 0; }
-.mkt-name { font-size: 14px; font-weight: 600; }
-.mkt-need {
-  font-size: 10px; font-weight: 800; color: #06231f; background: var(--accent);
-  padding: 1px 6px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
-}
-.mkt-where { font-size: 12px; color: var(--muted); }
-.mkt-mode { font-size: 12px; font-weight: 700; white-space: nowrap; }
 .mkt-mode-cambio { color: var(--accent); }
 .mkt-mode-venta { color: var(--gold); }
-.mkt-owner {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+
+/* Resumen destacado */
+.mkt-hero {
+  background: linear-gradient(180deg, #13243f, #16263f);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 10px; font-size: 14px;
 }
-.mkt-user { font-size: 12px; color: var(--muted); }
-.mkt-contact { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
-.mkt-nocontact { font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* Tarjeta por coleccionista */
+.ucard {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.ucard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.ucard-id { font-size: 14px; font-weight: 700; font-family: "Oswald", sans-serif; min-width: 0; }
+.ucard-need {
+  font-size: 10px; font-weight: 800; color: #06231f; background: var(--accent);
+  padding: 2px 7px; border-radius: 999px; margin-left: 4px; white-space: nowrap;
+}
+.ucard-contact {
+  flex: 0 0 auto; background: var(--accent); color: #06231f; font-weight: 700;
+  font-size: 13px; text-decoration: none; padding: 9px 16px; border-radius: 999px; white-space: nowrap;
+}
+.ucard-contact.wa { background: #25d366; color: #04331c; }
+.ucard-contact.plain { background: var(--card-2); color: var(--text); border: 1px solid var(--line); }
+.ucard-nocontact { font-size: 12px; color: var(--muted); font-style: italic; white-space: nowrap; }
+
+/* Mini-cromos */
+.mc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+.mc {
+  position: relative; background: #0a1424; border: 1px solid var(--line);
+  border-radius: 10px; padding: 9px 4px 7px; text-align: center;
+}
+.mc.need { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0, 194, 168, .25); }
+.mc-need {
+  position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 800; color: #06231f; background: var(--accent);
+  padding: 1px 6px; border-radius: 999px; white-space: nowrap;
+}
+.mc-flag { font-size: 24px; line-height: 1; }
+.mc-code { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 11px; color: var(--gold); margin-top: 4px; }
+.mc-mode { font-size: 11px; font-weight: 700; margin-top: 2px; }
 
 .album-tools { display: flex; justify-content: flex-end; padding: 0 2px 8px; }
 .tool-btn {
