@@ -92,33 +92,49 @@
     };
   }
 
-  // Builder para Mundiales anteriores: solo selecciones (sin páginas especiales).
+  // Builder para Mundiales anteriores: selecciones (escudo + foto + N jugadores)
+  // + secciones especiales (apertura, estadios…) según la distribución real.
   function buildSimpleWorldCup(id, cfg) {
-    var stickers = [], teams = [], no = 0;
+    var stickers = [], teams = [], sections = [], no = 0;
     function add(s) { no += 1; s.no = no; s.id = "s" + no; stickers.push(s); return s; }
+    var players = cfg.players || 17;
+
     Object.keys(cfg.groups).forEach(function (g) {
       cfg.groups[g].forEach(function (t) {
         var teamId = t[1];
         var team = { id: teamId, name: t[0], code: t[1], flag: t[2], group: g, stickerIds: [] };
-        var playerNum = 0;
-        for (var pos = 1; pos <= 20; pos++) {
-          var base = { section: "team", teamId: teamId, group: g, prefix: teamId, pos: pos,
-                       code: teamId + pos, codeLabel: teamId + " " + pos };
-          var st;
-          if (pos === 1) st = add(Object.assign({}, base, { role: "badge", name: "Escudo " + team.name, foil: true }));
-          else if (pos === 13) st = add(Object.assign({}, base, { role: "team_photo", name: "Plantilla " + team.name, foil: false }));
-          else { playerNum += 1; st = add(Object.assign({}, base, { role: "player", name: "Jugador " + playerNum, foil: false })); }
+        var pos = 0;
+        function tadd(role, name, foil) {
+          pos += 1;
+          var st = add({ section: "team", teamId: teamId, group: g, role: role, name: name, foil: foil,
+                         code: teamId + pos, codeLabel: teamId + " " + pos });
           team.stickerIds.push(st.id);
         }
+        tadd("badge", "Escudo " + t[0], true);
+        tadd("team_photo", "Plantilla " + t[0], false);
+        for (var p = 1; p <= players; p++) tadd("player", "Jugador " + p, false);
         teams.push(team);
       });
     });
+
+    var sno = 0;
+    (cfg.specials || []).forEach(function (sp) {
+      var ids = [];
+      for (var i = 1; i <= sp.count; i++) {
+        sno += 1;
+        var st = add({ section: sp.key, role: "special", name: sp.title + " " + i, foil: true,
+                       code: "S" + sno, codeLabel: "#" + sno });
+        ids.push(st.id);
+      }
+      sections.push({ key: sp.key, title: sp.title, subtitle: sp.subtitle || "", stickerIds: ids });
+    });
+
     stickers.forEach(function (s) {
       if (s.foil) { s.rarity = "rara"; s.value = 3; } else { s.rarity = "comun"; s.value = 1; }
     });
     window.ALBUM = {
       total: stickers.length, extrasTotal: 0, totalAll: stickers.length,
-      stickers: stickers, teams: teams, sections: [],
+      stickers: stickers, teams: teams, sections: sections,
       extraSection: { key: "extras", title: "Extras", subtitle: "", stickerIds: [] },
       groups: Object.keys(cfg.groups),
       byId: stickers.reduce(function (m, s) { m[s.id] = s; return m; }, {}),

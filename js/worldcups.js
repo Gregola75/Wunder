@@ -13,6 +13,8 @@
 window.WORLDCUPS = {
   wc2022: {
     badge: "MUNDIAL 2022", host: "Catar", hosts: "🇶🇦",
+    players: 18, // escudo + foto + 18 jugadores = 20 por equipo (670 total)
+    specials: [{ key: "especiales", title: "Especiales", subtitle: "Estadios · emblema · balón…", count: 30 }],
     groups: {
       A: [["Catar","QAT","🇶🇦"],["Ecuador","ECU","🇪🇨"],["Senegal","SEN","🇸🇳"],["Países Bajos","NED","🇳🇱"]],
       B: [["Inglaterra","ENG","🏴󠁧󠁢󠁥󠁮󠁧󠁿"],["Irán","IRN","🇮🇷"],["Estados Unidos","USA","🇺🇸"],["Gales","WAL","🏴󠁧󠁢󠁷󠁬󠁳󠁿"]],
@@ -26,6 +28,8 @@ window.WORLDCUPS = {
   },
   wc2018: {
     badge: "MUNDIAL 2018", host: "Rusia", hosts: "🇷🇺",
+    players: 18, // 20 por equipo (670 total)
+    specials: [{ key: "especiales", title: "Especiales", subtitle: "Estadios · emblema · leyendas…", count: 30 }],
     groups: {
       A: [["Rusia","RUS","🇷🇺"],["Arabia Saudita","KSA","🇸🇦"],["Egipto","EGY","🇪🇬"],["Uruguay","URU","🇺🇾"]],
       B: [["Portugal","POR","🇵🇹"],["España","ESP","🇪🇸"],["Marruecos","MAR","🇲🇦"],["Irán","IRN","🇮🇷"]],
@@ -39,6 +43,11 @@ window.WORLDCUPS = {
   },
   wc2014: {
     badge: "MUNDIAL 2014", host: "Brasil", hosts: "🇧🇷",
+    players: 17, // escudo + foto + 17 jugadores = 19 por equipo (640 total)
+    specials: [
+      { key: "apertura", title: "Apertura", subtitle: "Balón · mascota · emblema", count: 8 },
+      { key: "estadios", title: "Estadios", subtitle: "12 estadios (2 cromos c/u)", count: 24 },
+    ],
     groups: {
       A: [["Brasil","BRA","🇧🇷"],["Croacia","CRO","🇭🇷"],["México","MEX","🇲🇽"],["Camerún","CMR","🇨🇲"]],
       B: [["España","ESP","🇪🇸"],["Países Bajos","NED","🇳🇱"],["Chile","CHI","🇨🇱"],["Australia","AUS","🇦🇺"]],
@@ -52,6 +61,8 @@ window.WORLDCUPS = {
   },
   wc2010: {
     badge: "MUNDIAL 2010", host: "Sudáfrica", hosts: "🇿🇦",
+    players: 17, // escudo + foto + 17 jugadores = 19 por equipo (640 total)
+    specials: [{ key: "inicio", title: "Inicio y Estadios", subtitle: "Especiales · 00/000 · estadios", count: 32 }],
     groups: {
       A: [["Sudáfrica","RSA","🇿🇦"],["México","MEX","🇲🇽"],["Uruguay","URU","🇺🇾"],["Francia","FRA","🇫🇷"]],
       B: [["Argentina","ARG","🇦🇷"],["Nigeria","NGA","🇳🇬"],["Corea del Sur","KOR","🇰🇷"],["Grecia","GRE","🇬🇷"]],
