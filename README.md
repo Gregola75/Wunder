@@ -11,6 +11,11 @@ para luego **cambiar o vender** con otros usuarios.
   - **FIFA Museum** (11 cromos foil): leyendas / campeones históricos.
   - **48 selecciones × 20 cromos** = 960, en 12 grupos (A–L).
     Cada selección: **escudo** (foil) + **foto de equipo** + **18 jugadores**.
+- **Códigos oficiales Panini** en cada cromo:
+  - Especiales (Apertura + FIFA Museum): `FWC 1` … `FWC 20`.
+  - Selecciones: código de país de 3 letras + número, p. ej. `ARG 1` (escudo),
+    `ARG 13` (plantilla) … `ARG 20`, `BRA 7`, `MEX 12`, etc.
+  - El buscador entiende los códigos: escribe `ARG7` o `ARG 7`.
 - **Marcar cromos**: toca un cromo para marcarlo como *Tengo*; toca otra vez para
   sumar **repetidas** (x2, x3…). El botón **−** quita una.
 - **Faltan**: lista de todo lo que aún no tienes, agrupado por selección.

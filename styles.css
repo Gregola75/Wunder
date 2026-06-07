@@ -221,8 +221,9 @@ html, body {
   border-radius: 12px; padding: 10px 12px;
 }
 .dup-no {
-  font-weight: 800; color: var(--gold); min-width: 34px; text-align: center;
-  background: #0a1424; border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px;
+  font-weight: 800; color: var(--gold); min-width: 56px; text-align: center; white-space: nowrap;
+  font-size: 13px;
+  background: #0a1424; border: 1px solid var(--line); border-radius: 8px; padding: 6px 6px;
 }
 .dup-info { flex: 1; min-width: 0; }
 .dup-name { font-size: 14px; font-weight: 600; }

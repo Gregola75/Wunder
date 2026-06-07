@@ -55,6 +55,14 @@
     return text.toLowerCase().indexOf(query) !== -1;
   }
 
+  // Coincide por nombre o por código Panini (acepta "ARG7" y "ARG 7").
+  function stickerMatches(s) {
+    if (!query) return true;
+    const q = query.replace(/\s+/g, "");
+    if (s.code.toLowerCase().indexOf(q) !== -1) return true;
+    return matchesQuery(nameOf(s));
+  }
+
   // ---------- Render de un cromo ----------
   function cellHTML(s) {
     const c = Store.getCount(s.id);
@@ -71,7 +79,7 @@
           '<button class="mini btn-rename" title="Renombrar">✎</button>' +
           (owned ? '<button class="mini btn-dec" title="Quitar una">−</button>' : "") +
         '</div>' +
-        '<div class="cell-no">' + s.no + (s.foil ? ' <span class="foil-dot" title="Foil">✦</span>' : "") + '</div>' +
+        '<div class="cell-no">' + s.codeLabel + (s.foil ? ' <span class="foil-dot" title="Foil">✦</span>' : "") + '</div>' +
         '<div class="cell-name">' + escapeHTML(nameOf(s)) + '</div>' +
         '<div class="cell-status">' +
           (owned
@@ -95,7 +103,7 @@
     // Secciones especiales
     A.sections.forEach(function (sec) {
       const cells = sec.stickerIds.map(function (id) { return A.byId[id]; });
-      const visible = cells.filter(function (s) { return matchesQuery(nameOf(s)) || matchesQuery(sec.title); });
+      const visible = cells.filter(function (s) { return stickerMatches(s) || matchesQuery(sec.title); });
       if (visible.length === 0) return;
       const owned = cells.filter(function (s) { return Store.getCount(s.id) >= 1; }).length;
       html +=
@@ -116,7 +124,7 @@
       groupTeams.forEach(function (team) {
         const cells = team.stickerIds.map(function (id) { return A.byId[id]; });
         const teamMatches = matchesQuery(team.name) || matchesQuery(team.code);
-        const visible = teamMatches ? cells : cells.filter(function (s) { return matchesQuery(nameOf(s)); });
+        const visible = teamMatches ? cells : cells.filter(function (s) { return stickerMatches(s); });
         if (visible.length === 0) return;
         const owned = teamProgress(team);
         teamsHTML +=
@@ -145,7 +153,7 @@
 
     function block(title, emoji, cells) {
       const missing = cells.filter(function (s) {
-        return Store.getCount(s.id) === 0 && (matchesQuery(nameOf(s)) || matchesQuery(title));
+        return Store.getCount(s.id) === 0 && (stickerMatches(s) || matchesQuery(title));
       });
       if (missing.length === 0) return "";
       totalMissing += missing.length;
@@ -180,7 +188,7 @@
     A.stickers.forEach(function (s) {
       const c = Store.getCount(s.id);
       const spare = c - 1;
-      if (spare >= 1 && (matchesQuery(nameOf(s)))) {
+      if (spare >= 1 && stickerMatches(s)) {
         rows.push({ s: s, spare: spare });
         totalSpare += spare;
       }
@@ -199,7 +207,7 @@
       const where = team ? (team.flag + " " + team.name + " · Grupo " + team.group) : "Especial";
       html +=
         '<div class="dup-row" data-id="' + s.id + '">' +
-          '<div class="dup-no">' + s.no + '</div>' +
+          '<div class="dup-no">' + s.codeLabel + '</div>' +
           '<div class="dup-info"><div class="dup-name">' + escapeHTML(nameOf(s)) + '</div>' +
             '<div class="dup-where">' + escapeHTML(where) + ' · ' + roleTag(s) + '</div></div>' +
           '<div class="dup-count"><button class="mini btn-dec">−</button>' +
@@ -235,7 +243,7 @@
   // ---------- Acciones sobre cromos ----------
   function handleRename(s) {
     const actual = nameOf(s);
-    const nuevo = window.prompt("Nuevo nombre para el cromo #" + s.no + ":", actual);
+    const nuevo = window.prompt("Nuevo nombre para el cromo " + s.codeLabel + ":", actual);
     if (nuevo === null) return; // cancelado
     Store.setName(s.id, nuevo);
     render();

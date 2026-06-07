@@ -135,23 +135,33 @@
     no += 1;
     sticker.no = no;
     sticker.id = "s" + no;
+    // Código Panini, p.ej. "FWC" + "7" -> "FWC7" / etiqueta "FWC 7"
+    sticker.code = sticker.prefix + sticker.pos;
+    sticker.codeLabel = sticker.prefix + " " + sticker.pos;
     stickers.push(sticker);
     return sticker;
   }
 
+  // Apertura + FIFA Museum comparten la numeración FWC (FWC 1..20):
+  //   Apertura     -> FWC 1..9
+  //   FIFA Museum  -> FWC 10..20
+  let fwc = 0;
+
   // Apertura
   const openingIds = [];
   OPENING.forEach(function (name) {
-    openingIds.push(add({ section: "opening", role: "special", name: name, foil: true }).id);
+    fwc += 1;
+    openingIds.push(add({ section: "opening", role: "special", name: name, foil: true, prefix: "FWC", pos: fwc }).id);
   });
-  sections.push({ key: "opening", title: "Apertura", subtitle: "Cromos foil", stickerIds: openingIds });
+  sections.push({ key: "opening", title: "Apertura", subtitle: "Cromos foil · FWC", stickerIds: openingIds });
 
   // FIFA Museum
   const museumIds = [];
   MUSEUM.forEach(function (name) {
-    museumIds.push(add({ section: "museum", role: "special", name: name, foil: true }).id);
+    fwc += 1;
+    museumIds.push(add({ section: "museum", role: "special", name: name, foil: true, prefix: "FWC", pos: fwc }).id);
   });
-  sections.push({ key: "museum", title: "FIFA Museum", subtitle: "Leyendas · Cromos foil", stickerIds: museumIds });
+  sections.push({ key: "museum", title: "FIFA Museum", subtitle: "Leyendas · Cromos foil · FWC", stickerIds: museumIds });
 
   // Selecciones
   Object.keys(GROUPS).forEach(function (groupKey) {
@@ -174,13 +184,15 @@
       let playerNum = 0;
       for (let pos = 1; pos <= 20; pos++) {
         let st;
+        // Código Panini por país: <CÓDIGO><posición>, p.ej. ARG1..ARG20
+        const base = { section: "team", teamId: teamId, group: groupKey, prefix: teamId, pos: pos };
         if (pos === 1) {
-          st = add({ section: "team", teamId: teamId, group: groupKey, role: "badge", name: "Escudo " + team.name, foil: true });
+          st = add(Object.assign({}, base, { role: "badge", name: "Escudo " + team.name, foil: true }));
         } else if (pos === 13) {
-          st = add({ section: "team", teamId: teamId, group: groupKey, role: "team_photo", name: "Plantilla " + team.name, foil: false });
+          st = add(Object.assign({}, base, { role: "team_photo", name: "Plantilla " + team.name, foil: false }));
         } else {
           playerNum += 1;
-          st = add({ section: "team", teamId: teamId, group: groupKey, role: "player", name: "Jugador " + playerNum, foil: false });
+          st = add(Object.assign({}, base, { role: "player", name: "Jugador " + playerNum, foil: false }));
         }
         team.stickerIds.push(st.id);
       }
