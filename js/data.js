@@ -221,7 +221,10 @@
           st = add(Object.assign({}, base, { role: "team_photo", name: "Plantilla " + team.name, foil: false }));
         } else {
           playerNum += 1;
-          st = add(Object.assign({}, base, { role: "player", name: "Jugador " + playerNum, foil: false }));
+          // Nombre real del jugador según el orden del álbum (si está cargado)
+          const roster = (window.PLAYERS && window.PLAYERS[teamId]) || null;
+          const realName = roster && roster[playerNum - 1];
+          st = add(Object.assign({}, base, { role: "player", name: realName || ("Jugador " + playerNum), foil: false }));
         }
         team.stickerIds.push(st.id);
       }
