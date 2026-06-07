@@ -89,6 +89,9 @@
     } catch (e) {
       console.warn("No se pudo guardar el progreso:", e);
     }
+    // Si hay sesión en la nube, avisa para subir el cambio (offline-first).
+    try { if (window.Cloud && window.Cloud.onLocalChange) window.Cloud.onLocalChange(); }
+    catch (e) {}
   }
 
   const Store = {

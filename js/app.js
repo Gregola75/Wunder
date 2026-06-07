@@ -437,6 +437,9 @@
     e.target.value = "";
   }
 
+  // Exponemos render() para que la nube refresque la pantalla tras sincronizar.
+  window.WunderApp = { render: render };
+
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {
     wireEvents();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#10203a" />
   <title>Mi Álbum · Mundial 2026</title>
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
 </head>
 <body>
@@ -20,6 +20,7 @@
         <button class="menu-btn" id="menu-toggle" title="Opciones">⋯</button>
       </div>
     </div>
+    <div class="cloud-status" id="cloud-status"></div>
 
     <div class="progress-box">
       <div class="progress-top">
@@ -51,7 +52,7 @@
 
   <footer class="app-footer">
     <p>Toca un cromo para marcarlo. En <b>Repes</b> pon tus repetidas en <b>Cambio</b> o <b>Venta</b> con precio. Pon tu contacto en <b>⋯ Opciones</b>.</p>
-    <p class="footer-soon">Próximamente: cuentas y mercado entre usuarios (ver las repes de otros) 🤝</p>
+    <p class="footer-soon">Entra con tu cuenta en <b>⋯ Opciones</b> para guardar tu álbum en la nube ☁️. Próximamente: mercado entre usuarios 🤝</p>
   </footer>
 
   <!-- Menú de opciones (hoja inferior con fondo, no tapa el contenido) -->
@@ -59,6 +60,7 @@
     <div class="sheet" id="menu-pop">
       <div class="sheet-handle"></div>
       <h3 class="sheet-title">Opciones</h3>
+      <div class="account-box" id="account-box"></div>
       <label class="sheet-field">
         <span>Tu contacto (para cambios/ventas)</span>
         <input type="text" id="contact-input" placeholder="WhatsApp, @usuario o email" autocomplete="off" />
@@ -71,10 +73,13 @@
     </div>
   </div>
 
-  <script src="js/players.js?v=10"></script>
-  <script src="js/data.js?v=10"></script>
-  <script src="js/storage.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/players.js?v=11"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/storage.js?v=11"></script>
+  <script src="js/cloud.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
   <script>
     // Menú de opciones como hoja inferior con fondo oscuro
     (function () {

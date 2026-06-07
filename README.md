@@ -55,13 +55,22 @@ index.html        # interfaz y maquetación
 styles.css        # estilos (mobile-first, tema mundialista)
 js/data.js        # estructura del álbum (980 cromos, equipos, grupos)
 js/storage.js     # guardado local (localStorage) del progreso
+js/config.js      # conexión a Supabase (URL + clave anon public)
+js/cloud.js       # cuentas y sincronización en la nube (offline-first)
 js/app.js         # lógica de la interfaz (álbum, faltan, repes)
 ```
 
-## 🛣️ Próximos pasos (Fase 2 — intercambio entre usuarios)
+## 🛣️ Fase 2 — nube e intercambio entre usuarios
 
-- Cuentas de usuario e inicio de sesión.
-- Sincronización en la nube (tu álbum en cualquier dispositivo).
+Ya integrado (requiere configurar Supabase, ver más abajo):
+
+- ✅ **Cuentas de usuario** (email + contraseña) e inicio de sesión.
+- ✅ **Sincronización en la nube**: tu álbum se guarda online y lo ves en
+  cualquier dispositivo. Sigue funcionando **offline**; al entrar, fusiona lo
+  local con lo de la nube (en cantidades se queda con el mayor, no pierdes nada).
+
+En camino:
+
 - **Mercado / trueque**: ver las repetidas de otros usuarios, proponer
   cambios y vender cromos dentro de la app.
 - Emparejado automático: "tú tienes lo que a mí me falta y viceversa".
@@ -73,8 +82,28 @@ js/app.js         # lógica de la interfaz (álbum, faltan, repes)
 - **Colecciones antiguas**: añadir otros álbumes (Mundiales pasados,
   Adrenalyn XL…) para ser un punto de referencia de coleccionistas.
 
-Esto requiere un servidor y base de datos; la app actual ya está estructurada
-para conectarse a ese backend cuando lo añadamos.
+### ⚙️ Configurar la nube (Supabase)
+
+1. La conexión va en `js/config.js` (URL + clave **anon public**; es segura
+   para el navegador, NUNCA pongas la clave *service_role*).
+2. En el panel de Supabase → **Authentication → Providers → Email**: activa
+   *Email* y, para esta fase, **desactiva** *Confirm email* (entras al instante).
+3. En **SQL Editor** crea la tabla del álbum:
+
+   ```sql
+   create table if not exists albums (
+     user_id uuid primary key references auth.users on delete cascade,
+     display_name text,
+     contact text,
+     data jsonb not null default '{}'::jsonb,
+     updated_at timestamptz default now()
+   );
+   alter table albums enable row level security;
+   create policy "albums - dueño todo" on albums for all
+     using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   ```
+
+   *(Para el mercado, más adelante, añadiremos lectura entre usuarios.)*
 
 ## ℹ️ Notas
 
