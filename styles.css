@@ -675,3 +675,15 @@ body.locked .header-fab { display: none; }
 .tr-btn.ok { background: var(--accent); color: #0b1220; border-color: transparent; }
 .tr-btn.no { color: var(--danger); border-color: rgba(240,98,108,.4); }
 .empty.sm { padding: 10px; font-size: 13px; }
+
+/* Condición del cambio (Repes) */
+.cond-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.cond-lbl { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.cond-btn { background: var(--card-2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.cond-btn.active { background: var(--accent); color: #0b1220; border-color: transparent; }
+
+/* Privacidad (Configuración) */
+.priv-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.priv-btn { flex: 1; min-width: 90px; background: var(--card-2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 9px 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.priv-btn.active { background: var(--accent); color: #0b1220; border-color: transparent; }
+.priv-btn[disabled] { opacity: .5; cursor: not-allowed; }

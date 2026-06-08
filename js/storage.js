@@ -112,13 +112,16 @@
     getListing: function (id) {
       return state.listings[codeFor(id)] || null;
     },
-    setListing: function (id, type, price) {
+    setListing: function (id, type, price, cond) {
       const code = codeFor(id);
       if (!type) {
         delete state.listings[code];
       } else {
+        const prev = state.listings[code] || {};
         const p = price == null || price === "" ? null : Math.max(0, Number(price) || 0);
-        state.listings[code] = { type: type, price: p };
+        // cond = condición del cambio: 1 = trato simple (1x1), 2..6 = pide N a cambio.
+        let c = cond == null ? (prev.cond || 1) : Math.max(1, Math.min(6, cond | 0));
+        state.listings[code] = { type: type, price: p, cond: c };
       }
       persist();
     },

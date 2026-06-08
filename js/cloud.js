@@ -183,6 +183,7 @@
     var av = document.getElementById("profile-avatar");
     if (av) av.textContent = (displayName().charAt(0) || "U").toUpperCase();
     if (window.WunderApp && window.WunderApp.refreshTradesBadge) window.WunderApp.refreshTradesBadge();
+    if (window.WunderApp && window.WunderApp.syncPrivacy) window.WunderApp.syncPrivacy();
   }
 
   function pullMergePush() {
@@ -241,7 +242,7 @@
       var spare = (counts[code] || 0) - 1;
       if (spare >= 1) {
         var l = listings[code] || {};
-        out[code] = { mode: l.type || "cambio", price: (l.price == null ? null : l.price), spare: spare };
+        out[code] = { mode: l.type || "cambio", price: (l.price == null ? null : l.price), spare: spare, cond: l.cond || 1 };
       }
     });
     return out;
@@ -256,7 +257,9 @@
 
   function publishMarket(st) {
     if (!session) return;
-    marketMine[ACTIVE] = buildPublic(st); // ofertas de la colección activa
+    // Privacidad: "privado" no publica nada; "todos" publica las repes.
+    var privacy = (st.settings && st.settings.privacy) || "todos";
+    marketMine[ACTIVE] = (privacy === "privado") ? {} : buildPublic(st);
     var mrow = {
       user_id: session.user.id,
       display_name: displayName(),
@@ -302,7 +305,7 @@
       var row = {
         from_user: session.user.id, to_user: t.toUser,
         collection: ACTIVE, code: t.code, mode: t.mode || "cambio",
-        price: (t.price == null ? null : t.price),
+        price: (t.price == null ? null : t.price), cond: (t.cond == null ? 1 : t.cond),
         from_name: displayName(), from_contact: contact,
         to_name: t.toName || null, to_contact: t.toContact || null,
         status: "pendiente",

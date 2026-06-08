@@ -299,6 +299,15 @@
       const isCambio = lst && lst.type === "cambio";
       const isVenta = lst && lst.type === "venta";
       const priceVal = isVenta && lst.price != null ? lst.price : "";
+      const cond = (lst && lst.cond) || 1;
+
+      function condBtns() {
+        let out = '<div class="cond-row"><span class="cond-lbl">Condición del cambio:</span>';
+        [["1", "1x1"], ["2", "x2"], ["3", "x3"], ["4", "x4"], ["5", "x5"], ["6", "x6"]].forEach(function (c) {
+          out += '<button class="cond-btn' + (cond === Number(c[0]) ? " active" : "") + '" data-cond="' + c[0] + '">' + c[1] + '</button>';
+        });
+        return out + '</div>';
+      }
 
       html +=
         '<div class="dup-row" data-id="' + s.id + '">' +
@@ -315,6 +324,7 @@
             '<button class="lst-btn btn-venta' + (isVenta ? " active" : "") + '">💲 Venta</button>' +
             (isVenta ? '<input class="price-input" type="number" min="0" inputmode="decimal" placeholder="Precio" value="' + priceVal + '" />' : "") +
           '</div>' +
+          (isCambio ? condBtns() : "") +
         '</div>';
     });
     html += '</div>';
@@ -363,12 +373,15 @@
   // propone un trato al dueño (owner).
   function miniCromo(o, owner) {
     const s = o.s;
-    const mode = o.mode === "venta" ? ("💲" + (o.price != null ? o.price : "")) : "🔁";
+    const mode = o.mode === "venta"
+      ? ("💲" + (o.price != null ? o.price : ""))
+      : ("🔁" + (o.cond > 1 ? "x" + o.cond : ""));
     const own = owner || {};
     return (
       '<div class="mc mc-offer' + (o.missing ? " need" : "") + '" title="Tocar para proponer · ' + escapeHTML(nameOf(s)) + '"' +
         ' data-code="' + escapeHTML(o.code) + '" data-mode="' + escapeHTML(o.mode) + '"' +
         ' data-price="' + (o.price != null ? escapeHTML(String(o.price)) : "") + '"' +
+        ' data-cond="' + (o.cond || 1) + '"' +
         ' data-oid="' + escapeHTML(own.user_id || "") + '"' +
         ' data-oname="' + escapeHTML(own.display_name || "Coleccionista") + '"' +
         ' data-ocontact="' + escapeHTML(own.contact || "") + '">' +
@@ -401,7 +414,7 @@
           if (hay.indexOf(query) === -1) return;
         }
         if (missing) needCount += 1;
-        items.push({ s: s, code: code, mode: mode, price: info.price, spare: info.spare || 1, missing: missing });
+        items.push({ s: s, code: code, mode: mode, price: info.price, spare: info.spare || 1, missing: missing, cond: info.cond || 1 });
       });
       if (items.length === 0) return;
       items.sort(function (a, b) { if (a.missing !== b.missing) return a.missing ? -1 : 1; return a.code.localeCompare(b.code); });
@@ -459,17 +472,20 @@
     const code = mc.getAttribute("data-code");
     const mode = mc.getAttribute("data-mode");
     const priceStr = mc.getAttribute("data-price");
+    const cond = Number(mc.getAttribute("data-cond")) || 1;
     const oid = mc.getAttribute("data-oid");
     const oname = mc.getAttribute("data-oname");
     const ocontact = mc.getAttribute("data-ocontact");
     if (!oid) { window.alert("No se pudo identificar al usuario."); return; }
     const s = codeIndex[code];
     const label = s ? s.codeLabel : code;
-    const what = mode === "venta" ? ("comprar" + (priceStr ? " (" + priceStr + ")" : "")) : "cambiar";
+    let what;
+    if (mode === "venta") what = "comprar" + (priceStr ? " (" + priceStr + ")" : "");
+    else what = (cond > 1) ? ("cambiar (te pide " + cond + " a cambio)") : "cambiar (trato simple)";
     if (!window.confirm("¿Proponer " + what + " " + label + " a " + oname + "?\n\nSe le avisará y, si acepta, veréis vuestros contactos para cerrar el trato.")) return;
     window.Cloud.createTrade({
       toUser: oid, toName: oname, toContact: ocontact,
-      code: code, mode: mode, price: priceStr ? Number(priceStr) : null,
+      code: code, mode: mode, price: priceStr ? Number(priceStr) : null, cond: cond,
     }).then(function () {
       window.alert("¡Propuesta enviada! La verás en la pestaña 🤝 Tratos.");
     }).catch(function () {
@@ -481,7 +497,9 @@
     const s = codeIndex[t.code];
     const name = s ? (flagFor(s) + " " + nameOf(s)) : t.code;
     const where = s ? s.codeLabel : t.code;
-    const modo = t.mode === "venta" ? ("💲 Venta" + (t.price != null ? " · " + t.price : "")) : "🔁 Cambio";
+    const modo = t.mode === "venta"
+      ? ("💲 Venta" + (t.price != null ? " · " + t.price : ""))
+      : ("🔁 Cambio · " + (t.cond > 1 ? "pide x" + t.cond : "simple"));
     return { name: escapeHTML(name), where: escapeHTML(where), modo: modo };
   }
 
@@ -701,6 +719,13 @@
         render();
         return;
       }
+      // Condición del cambio (1x1, x2..x6)
+      if (e.target.classList.contains("cond-btn")) {
+        const c = Number(e.target.getAttribute("data-cond")) || 1;
+        Store.setListing(id, "cambio", null, c);
+        render();
+        return;
+      }
       // Click en el cuerpo del cromo (vista álbum / faltan).
       if (cell) {
         const count = Store.getCount(id);
@@ -754,6 +779,24 @@
         if (av) av.textContent = (pname.value.trim().charAt(0) || "U").toUpperCase();
       });
     }
+
+    // Privacidad de las repes en el mercado
+    function syncPriv() {
+      const cur = Store.getSetting("privacy", "todos");
+      document.querySelectorAll(".priv-btn").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-priv") === cur);
+      });
+    }
+    document.querySelectorAll(".priv-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (b.disabled) return;
+        Store.setSetting("privacy", b.getAttribute("data-priv"));
+        syncPriv();
+      });
+    });
+    syncPriv();
+    window.WunderApp = window.WunderApp || {};
+    window.WunderApp.syncPrivacy = syncPriv;
 
     // Cambiar contraseña / exportar PDF
     const bcp = el("#btn-change-pass");
