@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=44" />
+  <link rel="stylesheet" href="styles.css?v=45" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -103,6 +103,7 @@
       <div class="set-sec">
         <div class="set-sec-title">👤 Cuenta</div>
         <div class="account-box" id="account-box"></div>
+        <button class="set-item" id="btn-friends">👥 Amigos <span class="tab-badge" id="friends-badge" hidden></span></button>
         <button class="set-item" id="btn-change-pass">🔑 Cambiar contraseña</button>
       </div>
 
@@ -120,7 +121,7 @@
           <span>¿Quién ve tus repes en el mercado?</span>
           <div class="priv-row">
             <button class="priv-btn" data-priv="todos">🌍 Todos</button>
-            <button class="priv-btn" data-priv="amigos" disabled>👥 Amigos (pronto)</button>
+            <button class="priv-btn" data-priv="amigos">👥 Solo amigos</button>
             <button class="priv-btn" data-priv="privado">🔒 Nadie</button>
           </div>
         </div>
@@ -148,7 +149,7 @@
         <button class="set-item danger" id="btn-reset">🗑️ Reiniciar este álbum</button>
       </div>
 
-      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v44</p>
+      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v45</p>
 
     </div>
   </div>
@@ -167,17 +168,27 @@
     <div class="coll-body" id="coll-body"></div>
   </div>
 
+  <!-- Pantalla de Amigos -->
+  <div class="collections" id="friends" hidden>
+    <div class="coll-head">
+      <h2>Amigos</h2>
+      <button class="coll-x" id="friends-close" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="coll-intro">Tus amigos pueden ver las repes que marques como <b>👥 Solo amigos</b> en la privacidad del mercado. Añade amigos desde el <b>🛒 Mercado</b> tocando «👥 Añadir amigo».</p>
+    <div class="coll-body" id="friends-body"></div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=44"></script>
-  <script src="js/collections.js?v=44"></script>
-  <script src="js/worldcups.js?v=44"></script>
-  <script src="js/adrenalyn.js?v=44"></script>
-  <script src="js/players.js?v=44"></script>
-  <script src="js/wcplayers.js?v=44"></script>
-  <script src="js/data.js?v=44"></script>
-  <script src="js/storage.js?v=44"></script>
-  <script src="js/cloud.js?v=44"></script>
-  <script src="js/app.js?v=44"></script>
+  <script src="js/config.js?v=45"></script>
+  <script src="js/collections.js?v=45"></script>
+  <script src="js/worldcups.js?v=45"></script>
+  <script src="js/adrenalyn.js?v=45"></script>
+  <script src="js/players.js?v=45"></script>
+  <script src="js/wcplayers.js?v=45"></script>
+  <script src="js/data.js?v=45"></script>
+  <script src="js/storage.js?v=45"></script>
+  <script src="js/cloud.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
   <script>
     // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {

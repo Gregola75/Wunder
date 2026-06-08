@@ -34,6 +34,7 @@
   let mktOnlyMissing = true;  // solo mostrar lo que me falta
   let mktMode = "all";        // all | cambio | venta
   let marketRows = null;      // caché de ofertas (para no recargar al filtrar)
+  let marketFriends = null;   // caché de amigos (para filtrar y mostrar estado)
 
   // Doble toque para marcar por primera vez (evita marcar cromos sin querer).
   let armedId = null;     // cromo "preparado" esperando el segundo toque
@@ -344,15 +345,30 @@
       host.innerHTML = '<div class="empty">El mercado necesita que inicies sesión y haya conexión. ☁️</div>';
       return;
     }
-    // Si ya tenemos las ofertas en caché, solo re-filtramos (sin recargar).
-    if (marketRows) { host.innerHTML = marketHTML(marketRows); return; }
+    // Si ya tenemos ofertas y amigos en caché, solo re-filtramos (sin recargar).
+    if (marketRows && marketFriends) { host.innerHTML = marketHTML(marketRows, marketFriends); return; }
     host.innerHTML = '<div class="empty">Cargando mercado… ⏳</div>';
-    window.Cloud.fetchMarket().then(function (rows) {
-      marketRows = rows || [];
-      if (currentTab === "market") host.innerHTML = marketHTML(marketRows);
+    Promise.all([
+      marketRows ? Promise.resolve(marketRows) : window.Cloud.fetchMarket(),
+      (window.Cloud.fetchFriends ? window.Cloud.fetchFriends() : Promise.resolve([])),
+    ]).then(function (res) {
+      marketRows = res[0] || [];
+      marketFriends = computeFriends(res[1] || []);
+      if (currentTab === "market") host.innerHTML = marketHTML(marketRows, marketFriends);
     }).catch(function () {
       host.innerHTML = '<div class="empty">No se pudo cargar el mercado. ¿Creaste la tabla en Supabase? Revisa también tu internet.</div>';
     });
+  }
+
+  function computeFriends(rows) {
+    const me = window.Cloud.myId ? window.Cloud.myId() : null;
+    const friendIds = new Set(), relatedIds = new Set();
+    (rows || []).forEach(function (f) {
+      const other = f.requester === me ? f.addressee : f.requester;
+      relatedIds.add(other);
+      if (f.status === "aceptada") friendIds.add(other);
+    });
+    return { friendIds: friendIds, relatedIds: relatedIds, rows: rows || [] };
   }
 
   // Botón grande de contacto (WhatsApp / email / texto).
@@ -393,10 +409,13 @@
     );
   }
 
-  function marketHTML(rows) {
+  function marketHTML(rows, fr) {
+    fr = fr || { friendIds: new Set(), relatedIds: new Set() };
     // Agrupamos por usuario: una tarjeta por persona con sus cromos en oferta.
     const users = [];
     rows.forEach(function (row) {
+      // Privacidad "solo amigos": si no eres su amigo, no ves sus repes.
+      if (row.privacy === "amigos" && !fr.friendIds.has(row.user_id)) return;
       const listings = (window.Cloud && window.Cloud.listingsFor) ? window.Cloud.listingsFor(row) : (row.listings || {});
       const items = [];
       let needCount = 0;
@@ -451,6 +470,10 @@
       '</div>';
     users.forEach(function (u) {
       const row = u.row;
+      let friendBit;
+      if (fr.friendIds.has(row.user_id)) friendBit = '<span class="friend-chip ok">👥 Amigo</span>';
+      else if (fr.relatedIds.has(row.user_id)) friendBit = '<span class="friend-chip pend">⏳ Pendiente</span>';
+      else friendBit = '<button class="friend-add" data-addfriend="' + escapeHTML(row.user_id || "") + '" data-name="' + escapeHTML(row.display_name || "") + '">👥 Añadir amigo</button>';
       html +=
         '<div class="ucard">' +
           '<div class="ucard-head">' +
@@ -458,6 +481,7 @@
               (u.needCount ? ' <span class="ucard-need">🎯 ' + u.needCount + ' te faltan</span>' : "") + '</div>' +
             contactBtnHTML(row.contact) +
           '</div>' +
+          '<div class="ucard-sub">' + friendBit + '</div>' +
           '<div class="mc-grid">' + u.items.map(function (it) { return miniCromo(it, row); }).join("") + '</div>' +
         '</div>';
     });
@@ -694,6 +718,110 @@
     });
   }
 
+  // ---------- Amigos ----------
+  function sendFriendRequestFromEl(btn) {
+    if (!window.Cloud || !window.Cloud.sendFriendRequest || !window.Cloud.isOnline()) {
+      window.alert("Inicia sesión para añadir amigos."); return;
+    }
+    const uid = btn.getAttribute("data-addfriend");
+    const name = btn.getAttribute("data-name") || "Coleccionista";
+    if (!uid) return;
+    if (!window.confirm("¿Enviar solicitud de amistad a " + name + "?")) return;
+    btn.disabled = true; btn.textContent = "⏳ Enviando…";
+    window.Cloud.sendFriendRequest(uid, name).then(function () {
+      btn.outerHTML = '<span class="friend-chip pend">⏳ Pendiente</span>';
+      // Refrescamos la caché de amigos para que se mantenga al re-filtrar.
+      marketFriends = null;
+      refreshFriendsBadge();
+    }).catch(function (e) {
+      btn.disabled = false; btn.textContent = "👥 Añadir amigo";
+      const m = String((e && e.message) || e);
+      if (/duplicate|unique/i.test(m)) window.alert("Ya tienes una solicitud o amistad con esta persona.");
+      else window.alert("No se pudo enviar la solicitud. ¿Creaste la tabla 'friends' en Supabase?");
+    });
+  }
+
+  function openFriends() {
+    const overlay = el("#friends");
+    const body = el("#friends-body");
+    if (!overlay || !body) return;
+    overlay.hidden = false;
+    body.innerHTML = '<div class="empty">Cargando amigos… ⏳</div>';
+    if (!window.Cloud || !window.Cloud.fetchFriends || !window.Cloud.isOnline()) {
+      body.innerHTML = '<div class="empty">Inicia sesión para ver tus amigos. ☁️</div>'; return;
+    }
+    window.Cloud.fetchFriends().then(function (rows) {
+      body.innerHTML = friendsHTML(rows || []);
+    }).catch(function () {
+      body.innerHTML = '<div class="empty">No se pudieron cargar los amigos. ¿Creaste la tabla "friends" en Supabase?</div>';
+    });
+  }
+
+  function friendsHTML(rows) {
+    const me = window.Cloud.myId ? window.Cloud.myId() : null;
+    const recibidas = [], enviadas = [], amigos = [];
+    rows.forEach(function (f) {
+      if (f.status === "aceptada") amigos.push(f);
+      else if (f.status === "pendiente") { (f.addressee === me ? recibidas : enviadas).push(f); }
+    });
+
+    function nameOfOther(f) {
+      return (f.requester === me) ? (f.addressee_name || "Coleccionista") : (f.requester_name || "Coleccionista");
+    }
+
+    function reqCard(f) {
+      return '<div class="fr-card">' +
+        '<div class="fr-name">👤 ' + escapeHTML(f.requester_name || "Coleccionista") + '</div>' +
+        '<div class="fr-actions">' +
+          '<button class="tr-btn ok" data-friend="' + f.id + '" data-faction="aceptar">✓ Aceptar</button>' +
+          '<button class="tr-btn no" data-friend="' + f.id + '" data-faction="rechazar">✕ Rechazar</button>' +
+        '</div></div>';
+    }
+    function sentCard(f) {
+      return '<div class="fr-card">' +
+        '<div class="fr-name">👤 ' + escapeHTML(f.addressee_name || "Coleccionista") + ' <span class="friend-chip pend">⏳ Pendiente</span></div>' +
+        '<div class="fr-actions"><button class="tr-btn" data-friend="' + f.id + '" data-faction="cancelar">Cancelar</button></div>' +
+        '</div>';
+    }
+    function friendCard(f) {
+      return '<div class="fr-card">' +
+        '<div class="fr-name">👤 ' + escapeHTML(nameOfOther(f)) + ' <span class="friend-chip ok">👥 Amigo</span></div>' +
+        '<div class="fr-actions"><button class="tr-btn no" data-friend="' + f.id + '" data-faction="eliminar">Eliminar</button></div>' +
+        '</div>';
+    }
+
+    let html = "";
+    html += '<div class="tr-sec-title">📥 Solicitudes recibidas</div>';
+    html += recibidas.length ? recibidas.map(reqCard).join("") : '<div class="empty sm">Sin solicitudes nuevas.</div>';
+    html += '<div class="tr-sec-title">👥 Mis amigos</div>';
+    html += amigos.length ? amigos.map(friendCard).join("") : '<div class="empty sm">Aún no tienes amigos. Añade desde el 🛒 Mercado.</div>';
+    html += '<div class="tr-sec-title">📤 Solicitudes enviadas</div>';
+    html += enviadas.length ? enviadas.map(sentCard).join("") : '<div class="empty sm">No has enviado ninguna solicitud.</div>';
+    return html;
+  }
+
+  function handleFriendAction(id, action) {
+    if (!window.Cloud) return;
+    let prom;
+    if (action === "aceptar") prom = window.Cloud.setFriendStatus(id, "aceptada");
+    else if (action === "rechazar" || action === "cancelar" || action === "eliminar") prom = window.Cloud.deleteFriend(id);
+    else return;
+    prom.then(function () {
+      marketFriends = null; // la próxima vista del mercado se recalcula
+      openFriends();        // re-dibuja la lista de amigos
+      refreshFriendsBadge();
+    }).catch(function () { window.alert("No se pudo actualizar."); });
+  }
+
+  function refreshFriendsBadge() {
+    if (!window.Cloud || !window.Cloud.pendingFriendsCount) return;
+    window.Cloud.pendingFriendsCount().then(function (n) {
+      const b = el("#friends-badge");
+      if (!b) return;
+      if (n > 0) { b.textContent = n; b.hidden = false; } else { b.hidden = true; }
+    });
+  }
+
   // ---------- Render principal ----------
   function render() {
     // cualquier re-dibujo cancela un "doble toque" a medias
@@ -752,7 +880,7 @@
       tab.addEventListener("click", function () {
         currentTab = tab.dataset.tab;
         // Al entrar al Mercado, pedimos datos frescos.
-        if (currentTab === "market") marketRows = null;
+        if (currentTab === "market") { marketRows = null; marketFriends = null; }
         window.scrollTo(0, 0);
         render();
       });
@@ -782,10 +910,14 @@
         return;
       }
       // Filtros del Mercado
-      if (e.target.closest("[data-mkt-refresh]")) { marketRows = null; renderMarket(); return; }
+      if (e.target.closest("[data-mkt-refresh]")) { marketRows = null; marketFriends = null; renderMarket(); return; }
       if (e.target.closest("[data-mkt-missing]")) { mktOnlyMissing = !mktOnlyMissing; renderMarket(); return; }
       const mModeBtn = e.target.closest("[data-mkt-mode]");
       if (mModeBtn) { mktMode = mModeBtn.getAttribute("data-mkt-mode"); renderMarket(); return; }
+
+      // Añadir amigo desde el Mercado
+      const addFr = e.target.closest("[data-addfriend]");
+      if (addFr) { sendFriendRequestFromEl(addFr); return; }
 
       // Proponer trato desde el Mercado (tocar un mini-cromo de otra persona)
       const offerEl = e.target.closest(".mc-offer[data-code]");
@@ -916,8 +1048,21 @@
     window.WunderApp = window.WunderApp || {};
     window.WunderApp.syncPrivacy = syncPriv;
 
+    // Amigos: abrir/cerrar la pantalla + acciones (aceptar/rechazar/eliminar).
+    const bfr = el("#btn-friends");
+    if (bfr) bfr.addEventListener("click", function () { el("#settings").hidden = true; openFriends(); });
+    const frClose = el("#friends-close");
+    if (frClose) frClose.addEventListener("click", function () { el("#friends").hidden = true; });
+    const frBody = el("#friends-body");
+    if (frBody) frBody.addEventListener("click", function (e) {
+      const fb = e.target.closest("[data-friend]");
+      if (fb) handleFriendAction(fb.getAttribute("data-friend"), fb.getAttribute("data-faction"));
+    });
+
     // Aviso de propuestas/mensajes nuevos cada 30s mientras la app está abierta.
-    setInterval(function () { if (window.Cloud && window.Cloud.isOnline && window.Cloud.isOnline()) refreshTradesBadge(); }, 30000);
+    setInterval(function () {
+      if (window.Cloud && window.Cloud.isOnline && window.Cloud.isOnline()) { refreshTradesBadge(); refreshFriendsBadge(); }
+    }, 30000);
 
     // Cambiar contraseña / exportar PDF
     const bcp = el("#btn-change-pass");
@@ -1190,7 +1335,7 @@
   }
 
   // Exponemos funciones para la nube y para botones inline.
-  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge, closeChat: closeChat };
+  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge, refreshFriendsBadge: refreshFriendsBadge, closeChat: closeChat };
 
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {
@@ -1200,5 +1345,6 @@
     render();
     setupHeaderToggle();
     setupCollections();
+    refreshFriendsBadge();
   });
 })();

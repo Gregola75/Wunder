@@ -183,6 +183,7 @@
     var av = document.getElementById("profile-avatar");
     if (av) av.textContent = (displayName().charAt(0) || "U").toUpperCase();
     if (window.WunderApp && window.WunderApp.refreshTradesBadge) window.WunderApp.refreshTradesBadge();
+    if (window.WunderApp && window.WunderApp.refreshFriendsBadge) window.WunderApp.refreshFriendsBadge();
     if (window.WunderApp && window.WunderApp.syncPrivacy) window.WunderApp.syncPrivacy();
   }
 
@@ -257,7 +258,8 @@
 
   function publishMarket(st) {
     if (!session) return;
-    // Privacidad: "privado" no publica nada; "todos" publica las repes.
+    // Privacidad: "privado" no publica nada; "todos"/"amigos" publican las repes
+    // (en "amigos", solo tus amigos las verán — filtrado al leer el mercado).
     var privacy = (st.settings && st.settings.privacy) || "todos";
     marketMine[ACTIVE] = (privacy === "privado") ? {} : buildPublic(st);
     var mrow = {
@@ -265,6 +267,7 @@
       display_name: displayName(),
       contact: (st.settings && st.settings.contact) || null,
       listings: marketMine,
+      privacy: privacy,
       updated_at: new Date().toISOString(),
     };
     sb.from("market").upsert(mrow).then(function (res) {
@@ -291,7 +294,7 @@
     fetchMarket: function () {
       if (!session) return Promise.resolve([]);
       return sb.from("market")
-        .select("user_id,display_name,contact,listings,updated_at")
+        .select("user_id,display_name,contact,listings,updated_at,privacy")
         .neq("user_id", session.user.id)
         .then(function (res) {
           if (res.error) { console.warn(res.error); throw res.error; }
@@ -357,6 +360,37 @@
       if (!session) return Promise.resolve(0);
       return sb.from("messages").select("id", { count: "exact", head: true })
         .eq("to_user", session.user.id).gt("created_at", since || "1970-01-01")
+        .then(function (res) { return res.count || 0; }).catch(function () { return 0; });
+    },
+    // ---- Amigos ----
+    fetchFriends: function () {
+      if (!session) return Promise.resolve([]);
+      var uid = session.user.id;
+      return sb.from("friends").select("*").or("requester.eq." + uid + ",addressee.eq." + uid)
+        .then(function (res) { if (res.error) { console.warn(res.error); throw res.error; } return res.data || []; });
+    },
+    sendFriendRequest: function (toUser, toName) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      if (toUser === session.user.id) return Promise.reject(new Error("Eres tú"));
+      return sb.from("friends").insert({
+        requester: session.user.id, requester_name: displayName(),
+        addressee: toUser, addressee_name: toName || null, status: "pendiente",
+      }).then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    setFriendStatus: function (id, status) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.from("friends").update({ status: status, updated_at: new Date().toISOString() }).eq("id", id)
+        .then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    deleteFriend: function (id) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.from("friends").delete().eq("id", id)
+        .then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    pendingFriendsCount: function () {
+      if (!session) return Promise.resolve(0);
+      return sb.from("friends").select("id", { count: "exact", head: true })
+        .eq("addressee", session.user.id).eq("status", "pendiente")
         .then(function (res) { return res.count || 0; }).catch(function () { return 0; });
     },
   };

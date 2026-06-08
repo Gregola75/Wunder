@@ -688,6 +688,26 @@ body.locked .header-fab { display: none; }
 .priv-btn.active { background: var(--accent); color: #0b1220; border-color: transparent; }
 .priv-btn[disabled] { opacity: .5; cursor: not-allowed; }
 
+/* ---------- Amigos ---------- */
+.ucard-sub { margin: 2px 0 8px; }
+.friend-add {
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.friend-add:active { transform: scale(.98); }
+.friend-chip {
+  display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+}
+.friend-chip.ok { background: rgba(60, 200, 120, .16); color: #46d18a; border: 1px solid rgba(60, 200, 120, .35); }
+.friend-chip.pend { background: rgba(240, 190, 90, .14); color: #e8b84a; border: 1px solid rgba(240, 190, 90, .32); }
+.fr-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px; max-width: 560px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.fr-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fr-actions { display: flex; gap: 6px; }
+
 /* ---------- Chat de negociación (en línea) ---------- */
 .bubble {
   max-width: 78%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; word-wrap: break-word;
