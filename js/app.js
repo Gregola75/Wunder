@@ -614,16 +614,95 @@
       contact.addEventListener("input", function () { Store.setSetting("contact", contact.value.trim()); });
     }
 
-    // Menú: exportar / importar / reiniciar
+    // Nombre visible (perfil / mercado) + avatar con la inicial
+    const pname = el("#profile-name");
+    if (pname) {
+      pname.value = Store.getSetting("name", "");
+      pname.addEventListener("input", function () {
+        Store.setSetting("name", pname.value.trim());
+        const av = el("#profile-avatar");
+        if (av) av.textContent = (pname.value.trim().charAt(0) || "U").toUpperCase();
+      });
+    }
+
+    // Cambiar contraseña / exportar PDF
+    const bcp = el("#btn-change-pass");
+    if (bcp) bcp.addEventListener("click", changePassword);
+    const bpdf = el("#btn-export-pdf");
+    if (bpdf) bpdf.addEventListener("click", exportPDF);
+
+    // Listas: exportar / importar / reiniciar (esta colección)
     el("#btn-export").addEventListener("click", exportData);
     el("#btn-import").addEventListener("click", function () { el("#import-file").click(); });
     el("#import-file").addEventListener("change", importData);
     el("#btn-reset").addEventListener("click", function () {
-      if (window.confirm("¿Seguro que quieres borrar TODO tu progreso? Esto no se puede deshacer.")) {
+      const name = (A.meta && A.meta.badge) || "este álbum";
+      if (window.confirm("Vas a REINICIAR " + name + ".\n\nSe borrará tu progreso de ESTA colección (no cierra tu cuenta ni afecta a otras colecciones).\n\n¿Seguro?")) {
         Store.reset();
         render();
+        window.alert("Álbum reiniciado.");
       }
     });
+  }
+
+  function changePassword() {
+    if (!window.Cloud || !window.Cloud.isOnline() || !window.Cloud.changePassword) {
+      window.alert("Inicia sesión para cambiar la contraseña.");
+      return;
+    }
+    const p1 = window.prompt("Nueva contraseña (mínimo 6 caracteres):");
+    if (p1 == null) return;
+    if (p1.length < 6) { window.alert("La contraseña debe tener al menos 6 caracteres."); return; }
+    const p2 = window.prompt("Repite la nueva contraseña:");
+    if (p2 == null) return;
+    if (p1 !== p2) { window.alert("Las contraseñas no coinciden."); return; }
+    window.Cloud.changePassword(p1)
+      .then(function () { window.alert("Contraseña cambiada correctamente. ✔"); })
+      .catch(function (e) { window.alert("No se pudo cambiar la contraseña. " + ((e && e.message) || "")); });
+  }
+
+  // Exporta un PDF imprimible (faltan + repes) de la colección activa.
+  function exportPDF() {
+    const st = stats();
+    const meta = (A.meta && A.meta.badge) || "Swalbum";
+    const date = new Date().toLocaleDateString();
+
+    function missingHTML() {
+      let out = "";
+      function block(title, cells) {
+        const miss = cells.filter(function (s) { return Store.getCount(s.id) === 0; });
+        if (miss.length) out += "<h3>" + escapeHTML(title) + " (" + miss.length + ")</h3><p>" +
+          miss.map(function (s) { return escapeHTML(s.codeLabel); }).join(", ") + "</p>";
+      }
+      A.sections.forEach(function (sec) { block(sec.title, sec.stickerIds.map(function (id) { return A.byId[id]; })); });
+      A.teams.forEach(function (t) { block((t.flag ? t.flag + " " : "") + t.name, t.stickerIds.map(function (id) { return A.byId[id]; })); });
+      if (A.extraSection && A.extraSection.stickerIds.length) block(A.extraSection.title, A.extraSection.stickerIds.map(function (id) { return A.byId[id]; }));
+      return out || "<p>¡No te falta ninguno! 🎉</p>";
+    }
+    function repesHTML() {
+      const rows = [];
+      A.stickers.forEach(function (s) {
+        const sp = Store.getCount(s.id) - 1;
+        if (sp >= 1) rows.push(escapeHTML(s.codeLabel + " · " + nameOf(s)) + " <b>x" + sp + "</b>");
+      });
+      return rows.length ? "<p>" + rows.join("<br>") + "</p>" : "<p>Sin repetidas.</p>";
+    }
+
+    const html =
+      '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Swalbum · ' + escapeHTML(meta) + '</title>' +
+      '<style>body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:22px;}h1{margin:0 0 2px;font-size:20px;}' +
+      'h2{border-bottom:2px solid #333;padding-bottom:4px;margin:22px 0 8px;font-size:16px;}h3{margin:10px 0 2px;font-size:13px;}' +
+      'p{margin:0 0 6px;font-size:12px;line-height:1.5;}.sum{color:#444;font-size:13px;margin-bottom:6px;}</style></head><body>' +
+      '<h1>Swalbum · ' + escapeHTML(meta) + '</h1>' +
+      '<div class="sum">' + escapeHTML(date) + ' &nbsp;·&nbsp; Tengo ' + st.owned + ' &nbsp;·&nbsp; Faltan ' + st.missing + ' &nbsp;·&nbsp; Repes ' + st.dupes + '</div>' +
+      '<h2>🔍 Me faltan</h2>' + missingHTML() +
+      '<h2>🔁 Mis repetidas</h2>' + repesHTML() +
+      '</body></html>';
+
+    const w = window.open("", "_blank");
+    if (!w) { window.alert("Permite las ventanas emergentes para exportar/imprimir el PDF."); return; }
+    w.document.open(); w.document.write(html); w.document.close(); w.focus();
+    setTimeout(function () { try { w.print(); } catch (e) {} }, 400);
   }
 
   function exportData() {

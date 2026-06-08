@@ -97,6 +97,8 @@
       // Conexión directa (la hoja de opciones frena los clics globales).
       var so = document.getElementById("acc-signout");
       if (so) so.addEventListener("click", signOut);
+      var av = document.getElementById("profile-avatar");
+      if (av) av.textContent = (displayName().charAt(0) || "U").toUpperCase();
     } else {
       b.innerHTML = '<div class="acc-help">No has iniciado sesión.</div>';
     }
@@ -176,6 +178,10 @@
     if (window.WunderApp && window.WunderApp.render) window.WunderApp.render();
     var contact = document.getElementById("contact-input");
     if (contact) contact.value = window.Store.getSetting("contact", "");
+    var pn = document.getElementById("profile-name");
+    if (pn) pn.value = window.Store.getSetting("name", "");
+    var av = document.getElementById("profile-avatar");
+    if (av) av.textContent = (displayName().charAt(0) || "U").toUpperCase();
   }
 
   function pullMergePush() {
@@ -241,6 +247,8 @@
   }
 
   function displayName() {
+    var n = (window.Store && window.Store.getSetting) ? (window.Store.getSetting("name", "") || "") : "";
+    if (n) return n;
     var email = (session && session.user && session.user.email) || "";
     return email.split("@")[0] || "Coleccionista";
   }
@@ -265,6 +273,14 @@
     onLocalChange: function () { if (session) push(false); },
     isOnline: function () { return !!session; },
     myId: function () { return session && session.user ? session.user.id : null; },
+    // Cambia la contraseña del usuario logueado.
+    changePassword: function (newPass) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.auth.updateUser({ password: newPass }).then(function (res) {
+        if (res.error) throw res.error;
+        return true;
+      });
+    },
     // Devuelve las ofertas de una fila de mercado para la colección activa.
     listingsFor: function (row) { return marketMap(row && row.listings)[ACTIVE] || {}; },
     // Lee las ofertas del resto de usuarios (no las tuyas).

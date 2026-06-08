@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=30" />
+  <link rel="stylesheet" href="styles.css?v=31" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -83,27 +83,60 @@
     <p class="footer-soon">En <b>🛒 Mercado</b> ves las repes que ofrecen otros (y aparecen las tuyas si las marcas como Cambio/Venta en <b>Repes</b>) 🤝</p>
   </footer>
 
-  <!-- Menú de opciones (hoja inferior con fondo, no tapa el contenido) -->
-  <div class="sheet-backdrop" id="menu-backdrop" hidden>
-    <div class="sheet" id="menu-pop">
-      <div class="sheet-handle"></div>
-      <h3 class="sheet-title">Opciones</h3>
-      <div class="account-box" id="account-box"></div>
-      <label class="sheet-field">
-        <span>Tu contacto (para cambios/ventas)</span>
-        <input type="text" id="contact-input" placeholder="WhatsApp, @usuario o email" autocomplete="off" />
-      </label>
-      <button id="btn-share">📣 Invitar amigos</button>
-      <button id="btn-export">⬇️ Exportar respaldo</button>
-      <button id="btn-import">⬆️ Importar respaldo</button>
-      <button id="btn-reset" class="danger">🗑️ Reiniciar todo</button>
-      <button id="btn-close-menu" class="sheet-close">Cerrar</button>
+  <!-- Configuración (pantalla completa) -->
+  <div class="settings" id="settings" hidden>
+    <div class="set-head">
+      <h2>Configuración</h2>
+      <button class="coll-x" id="set-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="set-body">
+
+      <div class="set-sec">
+        <div class="set-sec-title">👤 Cuenta</div>
+        <div class="account-box" id="account-box"></div>
+        <button class="set-item" id="btn-change-pass">🔑 Cambiar contraseña</button>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-sec-title">🧑 Perfil</div>
+        <div class="set-profile">
+          <div class="avatar" id="profile-avatar">U</div>
+          <div class="set-profile-hint">Foto de perfil — próximamente 📷</div>
+        </div>
+        <label class="set-field"><span>Nombre visible (en el mercado)</span>
+          <input type="text" id="profile-name" placeholder="Tu nombre o apodo" autocomplete="off" /></label>
+        <label class="set-field"><span>Tu contacto (para cambios/ventas)</span>
+          <input type="text" id="contact-input" placeholder="WhatsApp, @usuario o email" autocomplete="off" /></label>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-sec-title">📄 Tus listas</div>
+        <button class="set-item" id="btn-export-pdf">🖨️ Exportar / Imprimir (PDF)</button>
+        <button class="set-item" id="btn-export">⬇️ Exportar respaldo (.json)</button>
+        <button class="set-item" id="btn-import">⬆️ Importar respaldo</button>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-sec-title">🧾 Historial de transacciones</div>
+        <p class="set-soon">Próximamente: registro de tus cambios y ventas. 🤝</p>
+      </div>
+
+      <div class="set-sec">
+        <button class="set-item" id="btn-share">📣 Invitar amigos</button>
+      </div>
+
+      <div class="set-sec danger-zone">
+        <div class="set-sec-title">⚠️ Zona peligrosa</div>
+        <p class="set-soon">Borra tu progreso de <b>esta colección</b> (NO cierra tu cuenta).</p>
+        <button class="set-item danger" id="btn-reset">🗑️ Reiniciar este álbum</button>
+      </div>
+
     </div>
   </div>
 
-  <!-- Campo de archivo para importar respaldo (fuera del menú para que no se
-       cierre con la hoja; sin filtro para que el móvil muestre el .json). -->
-  <input type="file" id="import-file" accept=".json,application/json,text/plain" hidden />
+  <!-- Campo de archivo para importar respaldo (visualmente oculto, no display:none,
+       para que el selector de archivos se abra bien en móvil). -->
+  <input type="file" id="import-file" accept=".json,application/json,text/plain" class="visually-hidden" />
 
   <!-- Pantalla de Colecciones (familias → ediciones) -->
   <div class="collections" id="collections" hidden>
@@ -116,31 +149,24 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=30"></script>
-  <script src="js/collections.js?v=30"></script>
-  <script src="js/worldcups.js?v=30"></script>
-  <script src="js/adrenalyn.js?v=30"></script>
-  <script src="js/players.js?v=30"></script>
-  <script src="js/wcplayers.js?v=30"></script>
-  <script src="js/data.js?v=30"></script>
-  <script src="js/storage.js?v=30"></script>
-  <script src="js/cloud.js?v=30"></script>
-  <script src="js/app.js?v=30"></script>
+  <script src="js/config.js?v=31"></script>
+  <script src="js/collections.js?v=31"></script>
+  <script src="js/worldcups.js?v=31"></script>
+  <script src="js/adrenalyn.js?v=31"></script>
+  <script src="js/players.js?v=31"></script>
+  <script src="js/wcplayers.js?v=31"></script>
+  <script src="js/data.js?v=31"></script>
+  <script src="js/storage.js?v=31"></script>
+  <script src="js/cloud.js?v=31"></script>
+  <script src="js/app.js?v=31"></script>
   <script>
-    // Menú de opciones como hoja inferior con fondo oscuro
+    // Configuración (pantalla completa) + invitar amigos
     (function () {
       var toggle = document.getElementById("menu-toggle");
-      var backdrop = document.getElementById("menu-backdrop");
-      var pop = document.getElementById("menu-pop");
-      var close = document.getElementById("btn-close-menu");
-      function open() { backdrop.hidden = false; }
-      function hide() { backdrop.hidden = true; }
-      toggle.addEventListener("click", open);
-      close.addEventListener("click", hide);
-      backdrop.addEventListener("click", function () { hide(); });
-      pop.addEventListener("click", function (e) { e.stopPropagation(); });
-      // cerrar la hoja también tras elegir exportar/importar/reiniciar
-      // Invitar amigos: compartir nativo o WhatsApp
+      var panel = document.getElementById("settings");
+      var close = document.getElementById("set-close");
+      toggle.addEventListener("click", function () { panel.hidden = false; });
+      close.addEventListener("click", function () { panel.hidden = true; });
       document.getElementById("btn-share").addEventListener("click", function () {
         var url = "https://swalbum.com";
         var text = "Colecciona e intercambia cromos con Swalbum ⚽📲";
@@ -149,9 +175,6 @@
         } else {
           window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank");
         }
-      });
-      ["btn-share", "btn-export", "btn-import", "btn-reset"].forEach(function (id) {
-        document.getElementById(id).addEventListener("click", function () { setTimeout(hide, 50); });
       });
     })();
   </script>
