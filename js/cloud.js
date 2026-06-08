@@ -28,6 +28,7 @@
   var ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
   var cloudAlbums = {};   // { collectionId: state }
   var marketMine = {};    // { collectionId: { code: {mode,price,spare} } }
+  var wantsMine = {};     // { collectionId: [codes que me faltan] }
 
   // La nube antes guardaba el estado "plano" (solo wc2026). Lo convertimos a mapa.
   function albumsMap(data) {
@@ -202,10 +203,14 @@
         window.Store.importData(JSON.stringify(merged));
         refreshUI();
         // Cargamos mi mercado actual (todas las colecciones) antes de republicar.
-        return sb.from("market").select("listings").eq("user_id", session.user.id).maybeSingle();
+        return sb.from("market").select("listings,wants").eq("user_id", session.user.id).maybeSingle();
       })
       .then(function (mres) {
-        if (mres && !mres.error) marketMine = marketMap(mres.data && mres.data.listings);
+        if (mres && !mres.error) {
+          marketMine = marketMap(mres.data && mres.data.listings);
+          var w = mres.data && mres.data.wants;
+          wantsMine = (w && typeof w === "object" && !Array.isArray(w)) ? w : {};
+        }
         push(true);
       })
       .catch(function (e) { setStatus("sin conexión"); console.warn(e); });
@@ -249,6 +254,18 @@
     return out;
   }
 
+  // Lista de códigos que ME FALTAN (count 0) en la colección activa, para que
+  // quien quiera un cromo mío vea qué ofrecerme a cambio.
+  function buildWants(state) {
+    var counts = (state && state.counts) || {};
+    var out = [];
+    var A = window.ALBUM;
+    if (A && A.stickers) {
+      A.stickers.forEach(function (s) { if ((counts[s.code] || 0) === 0) out.push(s.code); });
+    }
+    return out;
+  }
+
   function displayName() {
     var n = (window.Store && window.Store.getSetting) ? (window.Store.getSetting("name", "") || "") : "";
     if (n) return n;
@@ -262,11 +279,13 @@
     // (en "amigos", solo tus amigos las verán — filtrado al leer el mercado).
     var privacy = (st.settings && st.settings.privacy) || "todos";
     marketMine[ACTIVE] = (privacy === "privado") ? {} : buildPublic(st);
+    wantsMine[ACTIVE] = buildWants(st);
     var mrow = {
       user_id: session.user.id,
       display_name: displayName(),
       contact: (st.settings && st.settings.contact) || null,
       listings: marketMine,
+      wants: wantsMine,
       privacy: privacy,
       updated_at: new Date().toISOString(),
     };
@@ -290,11 +309,17 @@
     },
     // Devuelve las ofertas de una fila de mercado para la colección activa.
     listingsFor: function (row) { return marketMap(row && row.listings)[ACTIVE] || {}; },
+    // Devuelve los códigos que le faltan a ese usuario en la colección activa.
+    wantsFor: function (row) {
+      var w = row && row.wants;
+      if (!w || typeof w !== "object") return [];
+      return w[ACTIVE] || [];
+    },
     // Lee las ofertas del resto de usuarios (no las tuyas).
     fetchMarket: function () {
       if (!session) return Promise.resolve([]);
       return sb.from("market")
-        .select("user_id,display_name,contact,listings,updated_at,privacy")
+        .select("user_id,display_name,contact,listings,wants,updated_at,privacy")
         .neq("user_id", session.user.id)
         .then(function (res) {
           if (res.error) { console.warn(res.error); throw res.error; }
@@ -324,6 +349,7 @@
         from_user: session.user.id, to_user: t.toUser,
         collection: ACTIVE, code: t.code, mode: t.mode || "cambio",
         price: (t.price == null ? null : t.price), cond: (t.cond == null ? 1 : t.cond),
+        offer: (t.offer && t.offer.length ? t.offer : null),
         from_name: displayName(), from_contact: contact,
         to_name: t.toName || null, to_contact: t.toContact || null,
         status: "pendiente",

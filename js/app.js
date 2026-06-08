@@ -516,20 +516,97 @@
     const oname = mc.getAttribute("data-oname");
     const ocontact = mc.getAttribute("data-ocontact");
     if (!oid) { window.alert("No se pudo identificar al usuario."); return; }
-    const s = codeIndex[code];
-    const label = s ? s.codeLabel : code;
-    let what;
-    if (mode === "venta") what = "comprar" + (priceStr ? " (" + priceStr + ")" : "");
-    else what = (cond > 1) ? ("cambiar (te pide " + cond + " a cambio)") : "cambiar (trato simple)";
-    if (!window.confirm("¿Proponer " + what + " " + label + " a " + oname + "?\n\nSe le avisará y, si acepta, veréis vuestros contactos para cerrar el trato.")) return;
-    window.Cloud.createTrade({
-      toUser: oid, toName: oname, toContact: ocontact,
-      code: code, mode: mode, price: priceStr ? Number(priceStr) : null, cond: cond,
-    }).then(function () {
+    // Venta: confirmación directa (es comprar). Cambio: eliges qué le ofreces.
+    if (mode === "venta") {
+      const s = codeIndex[code];
+      const label = s ? s.codeLabel : code;
+      if (!window.confirm("¿Proponer comprar " + label + (priceStr ? " (" + priceStr + ")" : "") + " a " + oname +
+        "?\n\nSe le avisará y, si acepta, veréis vuestros contactos para cerrar el trato.")) return;
+      sendTrade({ toUser: oid, toName: oname, toContact: ocontact, code: code, mode: "venta", price: priceStr ? Number(priceStr) : null, cond: 1 });
+      return;
+    }
+    openTradePicker({ code: code, cond: cond, oid: oid, oname: oname, ocontact: ocontact });
+  }
+
+  function sendTrade(payload) {
+    return window.Cloud.createTrade(payload).then(function () {
       window.alert("¡Propuesta enviada! La verás en la pestaña 🤝 Tratos.");
     }).catch(function () {
-      window.alert("No se pudo enviar la propuesta. ¿Creaste la tabla 'trades' en Supabase?");
+      window.alert("No se pudo enviar la propuesta. ¿Actualizaste las tablas en Supabase?");
     });
+  }
+
+  // Selector: para un CAMBIO, eliges de tus repes los cromos que le faltan a la
+  // otra persona (le ofreces lo que necesita). Hasta "cond" cromos.
+  function openTradePicker(t) {
+    const row = (marketRows || []).find(function (r) { return r.user_id === t.oid; });
+    const wants = (window.Cloud.wantsFor ? window.Cloud.wantsFor(row) : []) || [];
+    // Cromos que le faltan a ÉL y de los que YO tengo repetidos (≥2).
+    const offerable = wants.filter(function (c) { return Store.getCount(c) >= 2 && codeIndex[c]; });
+    const want = codeIndex[t.code];
+    const wantLabel = want ? (flagFor(want) + " " + want.codeLabel + " · " + nameOf(want)) : t.code;
+    const N = t.cond || 1;
+    const sel = new Set();
+
+    let box = document.getElementById("trade-picker");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "trade-picker"; box.className = "picker"; box.hidden = true;
+      document.body.appendChild(box);
+      box.addEventListener("click", function (e) {
+        const ctx = box._ctx; if (!ctx) return;
+        if (e.target.closest("[data-pickclose]")) { box.hidden = true; return; }
+        const pc = e.target.closest("[data-pick]");
+        if (pc) {
+          const c = pc.getAttribute("data-pick");
+          if (ctx.sel.has(c)) ctx.sel.delete(c);
+          else if (ctx.sel.size < ctx.N) ctx.sel.add(c);
+          ctx.draw();
+          return;
+        }
+        if (e.target.closest("[data-picksend]")) {
+          const offer = Array.from(ctx.sel);
+          if (ctx.offerable.length && offer.length === 0) { window.alert("Elige al menos un cromo que le ofreces."); return; }
+          box.hidden = true;
+          sendTrade({ toUser: ctx.t.oid, toName: ctx.t.oname, toContact: ctx.t.ocontact, code: ctx.t.code, mode: "cambio", price: null, cond: ctx.N, offer: offer });
+          return;
+        }
+      });
+    }
+
+    function itemsHTML() {
+      if (!offerable.length) {
+        return '<div class="empty">Ahora mismo no tienes repes que le falten a <b>' + escapeHTML(t.oname) + '</b>.<br><br>' +
+          'Puedes proponer igualmente y poneros de acuerdo por el chat. 💬</div>';
+      }
+      return '<div class="pick-grid">' + offerable.map(function (c) {
+        const s = codeIndex[c];
+        return '<button class="pick-cell' + (sel.has(c) ? " on" : "") + '" data-pick="' + escapeHTML(c) + '">' +
+          '<span class="pk-flag">' + flagFor(s) + '</span>' +
+          '<span class="pk-code">' + s.codeLabel + '</span>' +
+          '<span class="pk-name">' + escapeHTML(nameOf(s)) + '</span>' +
+          '<span class="pk-spare">x' + (Store.getCount(c) - 1) + '</span>' +
+        '</button>';
+      }).join("") + '</div>';
+    }
+    function draw() {
+      box.innerHTML =
+        '<div class="picker-card">' +
+          '<div class="picker-head"><h2>Propón tu cambio</h2><button class="coll-x" data-pickclose aria-label="Cerrar">✕</button></div>' +
+          '<div class="picker-info">Quieres <b>' + escapeHTML(wantLabel) + '</b> de <b>' + escapeHTML(t.oname) + '</b>.<br>' +
+            (N > 1 ? ('Te pide <b>' + N + '</b> cromos que le faltan. ') : 'Elige <b>1</b> cromo que le falte. ') +
+            'Marca los que le ofreces a cambio:</div>' +
+          itemsHTML() +
+          '<div class="picker-foot">' +
+            '<span class="pick-count">' + sel.size + ' / ' + N + ' elegidos</span>' +
+            '<button class="picker-send" data-picksend' + (offerable.length && sel.size === 0 ? " disabled" : "") + '>Enviar propuesta</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    box._ctx = { t: t, sel: sel, N: N, offerable: offerable, draw: draw };
+    draw();
+    box.hidden = false;
   }
 
   function tradeLabel(t) {
@@ -602,11 +679,21 @@
         actions = '<div class="tr-actions">' + chatBtn + '</div>';
       }
       const statusChip = '<span class="tr-status st-' + t.status + '">' + t.status + '</span>';
+      // Cromos que se ofrecen a cambio (los que le faltan al dueño del cromo).
+      let offer = "";
+      if (t.offer && t.offer.length) {
+        const lbl = role === "recibido" ? "Te ofrece a cambio" : "Le ofreces";
+        const chips = t.offer.map(function (c) {
+          const s = codeIndex[c];
+          return '<span class="off-chip">' + (s ? (flagFor(s) + " " + s.codeLabel) : escapeHTML(c)) + '</span>';
+        }).join(" ");
+        offer = '<div class="tr-offer">🎁 ' + lbl + ': ' + chips + '</div>';
+      }
       return '<div class="tr-card">' +
         '<div class="tr-top"><div class="tr-code">' + L.where + '</div>' +
           '<div class="tr-info"><div class="tr-name">' + L.name + '</div>' +
             '<div class="tr-sub">' + (role === "recibido" ? ("De " + escapeHTML(otherName)) : ("Para " + escapeHTML(otherName))) + ' · ' + L.modo + '</div></div>' +
-          statusChip + '</div>' + contacts + actions +
+          statusChip + '</div>' + offer + contacts + actions +
         '<div class="tr-chat" data-chatbox="' + t.id + '" hidden></div>' +
         '</div>';
     }

@@ -6,7 +6,7 @@
  *   última copia cacheada (modo offline). Los recursos de terceros no se tocan.
  * - Al activarse una versión nueva, borra cachés antiguas.
  */
-var CACHE = "swalbum-v46";
+var CACHE = "swalbum-v51";
 var SHELL = ["./", "./index.html", "./manifest.json",
   "./assets/logo/swalbum-mark.png", "./assets/logo/swalbum-lockup.png"];
 
