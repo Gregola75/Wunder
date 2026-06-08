@@ -1,19 +1,23 @@
 /*
- * sw.js — Service Worker de Swalbum.
- *
- * Modo "siempre fresco": NO cachea (deja pasar a la red) para evitar quedarse
- * con versiones viejas. Mantiene la app instalable (PWA) y, al activarse una
- * versión nueva, borra cachés antiguas y recarga (controllerchange en la app).
+ * sw.js — AUTODESTRUCTIVO.
+ * Estábamos teniendo problemas de caché "pegada". Este service worker se
+ * desregistra a sí mismo, borra todas las cachés y recarga las pestañas para
+ * que SIEMPRE se cargue la versión más nueva desde la red. Sin caché.
  */
 self.addEventListener("install", function () { self.skipWaiting(); });
 
 self.addEventListener("activate", function (e) {
-  e.waitUntil(
-    caches.keys().then(function (keys) {
-      return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-    }).then(function () { return self.clients.claim(); })
-  );
+  e.waitUntil((async function () {
+    try { await self.registration.unregister(); } catch (err) {}
+    try {
+      var keys = await caches.keys();
+      await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+    } catch (err) {}
+    try {
+      var cs = await self.clients.matchAll({ type: "window" });
+      cs.forEach(function (c) { try { c.navigate(c.url); } catch (e2) {} });
+    } catch (err) {}
+  })());
 });
 
-// Sin respondWith: el navegador hace la petición normal (siempre a la red).
-self.addEventListener("fetch", function () {});
+self.addEventListener("fetch", function () { /* passthrough: siempre red */ });

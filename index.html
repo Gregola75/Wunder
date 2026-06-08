@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -148,7 +148,7 @@
         <button class="set-item danger" id="btn-reset">🗑️ Reiniciar este álbum</button>
       </div>
 
-      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v40</p>
+      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v41</p>
 
     </div>
   </div>
@@ -168,16 +168,16 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=40"></script>
-  <script src="js/collections.js?v=40"></script>
-  <script src="js/worldcups.js?v=40"></script>
-  <script src="js/adrenalyn.js?v=40"></script>
-  <script src="js/players.js?v=40"></script>
-  <script src="js/wcplayers.js?v=40"></script>
-  <script src="js/data.js?v=40"></script>
-  <script src="js/storage.js?v=40"></script>
-  <script src="js/cloud.js?v=40"></script>
-  <script src="js/app.js?v=40"></script>
+  <script src="js/config.js?v=41"></script>
+  <script src="js/collections.js?v=41"></script>
+  <script src="js/worldcups.js?v=41"></script>
+  <script src="js/adrenalyn.js?v=41"></script>
+  <script src="js/players.js?v=41"></script>
+  <script src="js/wcplayers.js?v=41"></script>
+  <script src="js/data.js?v=41"></script>
+  <script src="js/storage.js?v=41"></script>
+  <script src="js/cloud.js?v=41"></script>
+  <script src="js/app.js?v=41"></script>
   <script>
     // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {
@@ -210,15 +210,15 @@
       window.addEventListener("appinstalled", function () { if (installBtn) installBtn.hidden = true; });
     })();
 
-    // Service Worker (PWA + caché) con auto-actualización
+    // Service Worker DESACTIVADO temporalmente: desregistramos cualquiera viejo
+    // y borramos cachés para que siempre se cargue la versión más nueva.
     if ("serviceWorker" in navigator) {
-      var swRefreshing = false;
-      navigator.serviceWorker.addEventListener("controllerchange", function () {
-        if (swRefreshing) return; swRefreshing = true; window.location.reload();
-      });
-      window.addEventListener("load", function () {
-        navigator.serviceWorker.register("sw.js").then(function (reg) { if (reg.update) reg.update(); }).catch(function () {});
-      });
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }).catch(function () {});
+      }
     }
   </script>
 </body>
