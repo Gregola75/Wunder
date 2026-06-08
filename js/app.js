@@ -1169,8 +1169,10 @@
     // Cambiar contraseña / exportar PDF
     const bcp = el("#btn-change-pass");
     if (bcp) bcp.addEventListener("click", changePassword);
-    const bpdf = el("#btn-export-pdf");
-    if (bpdf) bpdf.addEventListener("click", exportPDF);
+    const bpdfM = el("#btn-pdf-missing");
+    if (bpdfM) bpdfM.addEventListener("click", function () { exportPDF("missing"); });
+    const bpdfR = el("#btn-pdf-repes");
+    if (bpdfR) bpdfR.addEventListener("click", function () { exportPDF("repes"); });
 
     // Listas: exportar / importar / reiniciar (esta colección)
     el("#btn-export").addEventListener("click", exportData);
@@ -1202,11 +1204,14 @@
       .catch(function (e) { window.alert("No se pudo cambiar la contraseña. " + ((e && e.message) || "")); });
   }
 
-  // Exporta un PDF imprimible (faltan + repes) de la colección activa.
-  function exportPDF() {
+  // Exporta un PDF imprimible de la colección activa.
+  // which: "missing" = solo lo que falta · "repes" = solo repetidas · (vacío) = ambas.
+  function exportPDF(which) {
     const st = stats();
     const meta = (A.meta && A.meta.badge) || "Swalbum";
     const date = new Date().toLocaleDateString();
+    const showMissing = which !== "repes";
+    const showRepes = which !== "missing";
 
     function missingHTML() {
       let out = "";
@@ -1229,15 +1234,16 @@
       return rows.length ? "<p>" + rows.join("<br>") + "</p>" : "<p>Sin repetidas.</p>";
     }
 
+    const title = "Swalbum · " + meta + (showMissing && showRepes ? "" : (showMissing ? " · Me faltan" : " · Mis repetidas"));
     const html =
-      '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Swalbum · ' + escapeHTML(meta) + '</title>' +
+      '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>' + escapeHTML(title) + '</title>' +
       '<style>body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:22px;}h1{margin:0 0 2px;font-size:20px;}' +
       'h2{border-bottom:2px solid #333;padding-bottom:4px;margin:22px 0 8px;font-size:16px;}h3{margin:10px 0 2px;font-size:13px;}' +
       'p{margin:0 0 6px;font-size:12px;line-height:1.5;}.sum{color:#444;font-size:13px;margin-bottom:6px;}</style></head><body>' +
-      '<h1>Swalbum · ' + escapeHTML(meta) + '</h1>' +
+      '<h1>' + escapeHTML(title) + '</h1>' +
       '<div class="sum">' + escapeHTML(date) + ' &nbsp;·&nbsp; Tengo ' + st.owned + ' &nbsp;·&nbsp; Faltan ' + st.missing + ' &nbsp;·&nbsp; Repes ' + st.dupes + '</div>' +
-      '<h2>🔍 Me faltan</h2>' + missingHTML() +
-      '<h2>🔁 Mis repetidas</h2>' + repesHTML() +
+      (showMissing ? ('<h2>🔍 Me faltan</h2>' + missingHTML()) : "") +
+      (showRepes ? ('<h2>🔁 Mis repetidas</h2>' + repesHTML()) : "") +
       '</body></html>';
 
     const w = window.open("", "_blank");
