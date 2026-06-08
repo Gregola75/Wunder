@@ -915,6 +915,9 @@
     if (chatForm) chatForm.addEventListener("submit", function (e) { e.preventDefault(); sendChat(); });
     const chatCloseBtn = el("#chat-close");
     if (chatCloseBtn) chatCloseBtn.addEventListener("click", closeChat);
+    // Tocar fuera de la ventana del chat (el fondo) la cierra.
+    const chatBd = el("#chat");
+    if (chatBd) chatBd.addEventListener("click", function (e) { if (e.target.id === "chat") closeChat(); });
     const chatActs = el("#chat-actions");
     if (chatActs) chatActs.addEventListener("click", function (e) {
       const b = e.target.closest("[data-cact]");

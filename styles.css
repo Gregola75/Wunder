@@ -722,3 +722,17 @@ body.locked .header-fab { display: none; }
 .chat-actions:empty { display: none; }
 .chat-actions .tr-btn { flex: 1; min-width: 120px; }
 .chat-note { flex: 1 1 100%; font-size: 12px; color: var(--muted); }
+
+/* ---------- Chat como ventana (modal) ---------- */
+.chat-backdrop {
+  position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 14px;
+}
+.chat-backdrop[hidden] { display: none; }
+.chat-panel {
+  width: 100%; max-width: 480px; height: min(82vh, 660px);
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow);
+}
+.chat-panel .chat-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.chat-x { width: 34px; height: 34px; border-radius: 9px; background: var(--card-2); border: 1px solid var(--line); color: var(--text); font-size: 15px; cursor: pointer; flex: 0 0 auto; }

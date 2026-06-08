@@ -5,7 +5,7 @@
  * nueva (evita quedarse con código viejo) y, si no hay internet, sirve lo
  * cacheado. Los recursos de terceros (Supabase, CDN, fuentes) no se interceptan.
  */
-var CACHE = "swalbum-cache-v1";
+var CACHE = "swalbum-cache-v3";
 var SHELL = ["./", "./index.html", "./manifest.json", "./assets/logo/swalbum-mark.png"];
 
 self.addEventListener("install", function (e) {
