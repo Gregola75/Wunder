@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=34" />
+  <link rel="stylesheet" href="styles.css?v=35" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -165,17 +165,30 @@
     <div class="coll-body" id="coll-body"></div>
   </div>
 
+  <!-- Chat de negociación (por trato) -->
+  <div class="chat" id="chat" hidden>
+    <div class="chat-head">
+      <button class="chat-back" id="chat-close" aria-label="Volver">←</button>
+      <div class="chat-title" id="chat-title">Chat</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" type="text" placeholder="Escribe un mensaje…" autocomplete="off" maxlength="500" />
+      <button type="submit" class="chat-send">Enviar</button>
+    </form>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=34"></script>
-  <script src="js/collections.js?v=34"></script>
-  <script src="js/worldcups.js?v=34"></script>
-  <script src="js/adrenalyn.js?v=34"></script>
-  <script src="js/players.js?v=34"></script>
-  <script src="js/wcplayers.js?v=34"></script>
-  <script src="js/data.js?v=34"></script>
-  <script src="js/storage.js?v=34"></script>
-  <script src="js/cloud.js?v=34"></script>
-  <script src="js/app.js?v=34"></script>
+  <script src="js/config.js?v=35"></script>
+  <script src="js/collections.js?v=35"></script>
+  <script src="js/worldcups.js?v=35"></script>
+  <script src="js/adrenalyn.js?v=35"></script>
+  <script src="js/players.js?v=35"></script>
+  <script src="js/wcplayers.js?v=35"></script>
+  <script src="js/data.js?v=35"></script>
+  <script src="js/storage.js?v=35"></script>
+  <script src="js/cloud.js?v=35"></script>
+  <script src="js/app.js?v=35"></script>
   <script>
     // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {

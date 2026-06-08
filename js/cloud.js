@@ -331,6 +331,28 @@
         .eq("to_user", session.user.id).eq("status", "pendiente")
         .then(function (res) { return res.count || 0; }).catch(function () { return 0; });
     },
+    // ---- Chat por trato ----
+    fetchMessages: function (tradeId) {
+      if (!session) return Promise.resolve([]);
+      return sb.from("messages").select("*").eq("trade_id", tradeId)
+        .order("created_at", { ascending: true })
+        .then(function (res) { if (res.error) { console.warn(res.error); throw res.error; } return res.data || []; });
+    },
+    sendMessage: function (tradeId, toUser, text) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.from("messages").insert({ trade_id: tradeId, from_user: session.user.id, to_user: toUser, text: text })
+        .then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    subscribeMessages: function (tradeId, cb) {
+      if (!sb.channel) return null;
+      try {
+        var ch = sb.channel("msg-" + tradeId).on("postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: "trade_id=eq." + tradeId },
+          function (p) { cb(p.new); }).subscribe();
+        return ch;
+      } catch (e) { return null; }
+    },
+    unsubscribe: function (ch) { if (ch && sb.removeChannel) try { sb.removeChannel(ch); } catch (e) {} },
   };
 
   // ---------- eventos (delegación, una sola vez) ----------
