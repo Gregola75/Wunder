@@ -1051,16 +1051,16 @@
         render();
         return;
       }
-      // Anuncios de cambio / venta (en la pestaña Repes)
+      // Anuncios de cambio / venta (en la pestaña Repes). Una repe siempre está
+      // en Cambio (por defecto) o en Venta: se elige entre las dos, sin "apagar".
       if (e.target.classList.contains("btn-cambio")) {
-        const cur = Store.getListing(id);
-        Store.setListing(id, cur && cur.type === "cambio" ? null : "cambio");
+        Store.setListing(id, "cambio");
         render();
         return;
       }
       if (e.target.classList.contains("btn-venta")) {
         const cur = Store.getListing(id);
-        Store.setListing(id, cur && cur.type === "venta" ? null : "venta", cur ? cur.price : null);
+        Store.setListing(id, "venta", cur ? cur.price : null);
         render();
         return;
       }

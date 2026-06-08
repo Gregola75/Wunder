@@ -58,6 +58,19 @@
   // Estado vacío hasta que un usuario inicie sesión (Cloud llama a useUser).
   let state = empty();
 
+  // Las repetidas se ofrecen en CAMBIO por defecto (el usuario puede pasarlas a
+  // Venta a mano). Marca como "cambio" cualquier repe (2+) que aún no tenga
+  // anuncio. No toca las que ya están en Cambio o Venta.
+  function ensureRepesListed(st) {
+    const counts = (st && st.counts) || {}, listings = (st && st.listings) || {};
+    Object.keys(counts).forEach(function (code) {
+      if ((counts[code] || 0) >= 2 && !listings[code]) {
+        listings[code] = { type: "cambio", price: null, cond: 1 };
+      }
+    });
+    return st;
+  }
+
   function persist() {
     if (!KEY) return; // sin usuario activo no guardamos en el dispositivo
     try {
@@ -75,7 +88,7 @@
     useUser: function (uid) {
       CURRENT_UID = uid || null;
       KEY = CURRENT_UID ? ("swalbum.u_" + CURRENT_UID + "." + ACTIVE + ".v2") : null;
-      state = KEY ? normalize(read(KEY)) : empty();
+      state = KEY ? ensureRepesListed(normalize(read(KEY))) : empty();
       return state;
     },
 
@@ -89,7 +102,9 @@
       if (v === 0) delete state.counts[code];
       else state.counts[code] = v;
       // Si ya no hay repetidas, retira el anuncio de cambio/venta.
-      if (v < 2 && state.listings[code]) delete state.listings[code];
+      if (v < 2) { if (state.listings[code]) delete state.listings[code]; }
+      // Al aparecer una repetida, se ofrece en CAMBIO automáticamente.
+      else if (!state.listings[code]) state.listings[code] = { type: "cambio", price: null, cond: 1 };
       persist();
       return v;
     },
@@ -152,12 +167,12 @@
     exportData: function () { return JSON.stringify(state, null, 2); },
     importData: function (json) {
       const data = JSON.parse(json);
-      state = Object.assign(empty(), {
+      state = ensureRepesListed(Object.assign(empty(), {
         counts: data.counts || {},
         names: data.names || {},
         listings: data.listings || {},
         settings: data.settings || {},
-      });
+      }));
       persist();
     },
   };
