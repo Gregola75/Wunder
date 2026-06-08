@@ -517,10 +517,18 @@
     }
     host.innerHTML = '<div class="empty">Cargando tratos… ⏳</div>';
     window.Cloud.fetchTrades().then(function (rows) {
-      host.innerHTML = tradesHTML(rows || []);
+      try {
+        host.innerHTML = tradesHTML(rows || []);
+      } catch (err) {
+        host.innerHTML = '<div class="empty">⚠️ Error al dibujar los tratos:<br><br><small>' +
+          escapeHTML(String((err && err.message) || err)) + '</small></div>';
+        console.error("tradesHTML", err);
+      }
       refreshTradesBadge();
-    }).catch(function () {
-      host.innerHTML = '<div class="empty">No se pudieron cargar los tratos. ¿Creaste la tabla "trades" en Supabase?</div>';
+    }).catch(function (e) {
+      host.innerHTML = '<div class="empty">No se pudieron cargar los tratos.<br><br><small>' +
+        escapeHTML(String((e && e.message) || e)) + '</small><br><br>¿Creaste la tabla "trades" en Supabase?</div>';
+      console.error("fetchTrades", e);
     });
   }
 
