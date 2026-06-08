@@ -644,3 +644,5 @@ body.locked .header-fab { display: none; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
   .brand h1 { font-size: 20px; }
 }
+
+.set-install { background: var(--accent); color: #0b1220; border-color: transparent; font-weight: 700; text-align: center; }

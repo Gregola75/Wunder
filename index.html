@@ -3,12 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#10203a" />
+  <meta name="theme-color" content="#0d1117" />
   <title>Swalbum · Mundial 2026</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/logo/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Swalbum" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=31" />
+  <link rel="stylesheet" href="styles.css?v=32" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -91,6 +97,8 @@
     </div>
     <div class="set-body">
 
+      <button class="set-item set-install" id="btn-install" hidden>📲 Instalar Swalbum en tu móvil</button>
+
       <div class="set-sec">
         <div class="set-sec-title">👤 Cuenta</div>
         <div class="account-box" id="account-box"></div>
@@ -149,18 +157,18 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=31"></script>
-  <script src="js/collections.js?v=31"></script>
-  <script src="js/worldcups.js?v=31"></script>
-  <script src="js/adrenalyn.js?v=31"></script>
-  <script src="js/players.js?v=31"></script>
-  <script src="js/wcplayers.js?v=31"></script>
-  <script src="js/data.js?v=31"></script>
-  <script src="js/storage.js?v=31"></script>
-  <script src="js/cloud.js?v=31"></script>
-  <script src="js/app.js?v=31"></script>
+  <script src="js/config.js?v=32"></script>
+  <script src="js/collections.js?v=32"></script>
+  <script src="js/worldcups.js?v=32"></script>
+  <script src="js/adrenalyn.js?v=32"></script>
+  <script src="js/players.js?v=32"></script>
+  <script src="js/wcplayers.js?v=32"></script>
+  <script src="js/data.js?v=32"></script>
+  <script src="js/storage.js?v=32"></script>
+  <script src="js/cloud.js?v=32"></script>
+  <script src="js/app.js?v=32"></script>
   <script>
-    // Configuración (pantalla completa) + invitar amigos
+    // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {
       var toggle = document.getElementById("menu-toggle");
       var panel = document.getElementById("settings");
@@ -176,7 +184,27 @@
           window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank");
         }
       });
+
+      // Instalar app (PWA)
+      var deferred = null;
+      var installBtn = document.getElementById("btn-install");
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault(); deferred = e;
+        if (installBtn) installBtn.hidden = false;
+      });
+      if (installBtn) installBtn.addEventListener("click", function () {
+        if (deferred) { deferred.prompt(); deferred = null; installBtn.hidden = true; }
+        else { window.alert("Para instalar: usa el menú del navegador → \"Añadir a pantalla de inicio\"."); }
+      });
+      window.addEventListener("appinstalled", function () { if (installBtn) installBtn.hidden = true; });
     })();
+
+    // Service Worker (PWA + caché)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>
