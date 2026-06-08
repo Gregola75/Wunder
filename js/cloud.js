@@ -182,6 +182,7 @@
     if (pn) pn.value = window.Store.getSetting("name", "");
     var av = document.getElementById("profile-avatar");
     if (av) av.textContent = (displayName().charAt(0) || "U").toUpperCase();
+    if (window.WunderApp && window.WunderApp.refreshTradesBadge) window.WunderApp.refreshTradesBadge();
   }
 
   function pullMergePush() {
@@ -293,6 +294,39 @@
           if (res.error) { console.warn(res.error); throw res.error; }
           return res.data || [];
         });
+    },
+    // ---- Tratos (transacciones) ----
+    createTrade: function (t) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      var contact = (window.Store && window.Store.getSetting) ? (window.Store.getSetting("contact", "") || null) : null;
+      var row = {
+        from_user: session.user.id, to_user: t.toUser,
+        collection: ACTIVE, code: t.code, mode: t.mode || "cambio",
+        price: (t.price == null ? null : t.price),
+        from_name: displayName(), from_contact: contact,
+        to_name: t.toName || null, to_contact: t.toContact || null,
+        status: "pendiente",
+      };
+      return sb.from("trades").insert(row).then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    fetchTrades: function () {
+      if (!session) return Promise.resolve([]);
+      var uid = session.user.id;
+      return sb.from("trades").select("*")
+        .or("from_user.eq." + uid + ",to_user.eq." + uid)
+        .order("updated_at", { ascending: false })
+        .then(function (res) { if (res.error) { console.warn(res.error); throw res.error; } return res.data || []; });
+    },
+    setTradeStatus: function (id, status) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.from("trades").update({ status: status, updated_at: new Date().toISOString() }).eq("id", id)
+        .then(function (res) { if (res.error) throw res.error; return true; });
+    },
+    pendingTradesCount: function () {
+      if (!session) return Promise.resolve(0);
+      return sb.from("trades").select("id", { count: "exact", head: true })
+        .eq("to_user", session.user.id).eq("status", "pendiente")
+        .then(function (res) { return res.count || 0; }).catch(function () { return 0; });
     },
   };
 

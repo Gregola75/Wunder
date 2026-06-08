@@ -359,12 +359,19 @@
     return '<span class="ucard-contact plain">💬 ' + escapeHTML(c) + '</span>';
   }
 
-  // Mini-cromo para el mercado (banderita + código + modo/precio).
-  function miniCromo(o) {
+  // Mini-cromo para el mercado (banderita + código + modo/precio). Tocarlo
+  // propone un trato al dueño (owner).
+  function miniCromo(o, owner) {
     const s = o.s;
     const mode = o.mode === "venta" ? ("💲" + (o.price != null ? o.price : "")) : "🔁";
+    const own = owner || {};
     return (
-      '<div class="mc' + (o.missing ? " need" : "") + '" title="' + escapeHTML(nameOf(s)) + '">' +
+      '<div class="mc mc-offer' + (o.missing ? " need" : "") + '" title="Tocar para proponer · ' + escapeHTML(nameOf(s)) + '"' +
+        ' data-code="' + escapeHTML(o.code) + '" data-mode="' + escapeHTML(o.mode) + '"' +
+        ' data-price="' + (o.price != null ? escapeHTML(String(o.price)) : "") + '"' +
+        ' data-oid="' + escapeHTML(own.user_id || "") + '"' +
+        ' data-oname="' + escapeHTML(own.display_name || "Coleccionista") + '"' +
+        ' data-ocontact="' + escapeHTML(own.contact || "") + '">' +
         (o.missing ? '<span class="mc-need">te falta</span>' : "") +
         '<div class="mc-flag">' + flagFor(s) + '</div>' +
         '<div class="mc-code">' + s.codeLabel + '</div>' +
@@ -438,10 +445,124 @@
               (u.needCount ? ' <span class="ucard-need">🎯 ' + u.needCount + ' te faltan</span>' : "") + '</div>' +
             contactBtnHTML(row.contact) +
           '</div>' +
-          '<div class="mc-grid">' + u.items.map(miniCromo).join("") + '</div>' +
+          '<div class="mc-grid">' + u.items.map(function (it) { return miniCromo(it, row); }).join("") + '</div>' +
         '</div>';
     });
     return html;
+  }
+
+  // ---------- Tratos (transacciones) ----------
+  function proposeTradeFromEl(mc) {
+    if (!window.Cloud || !window.Cloud.createTrade || !window.Cloud.isOnline()) {
+      window.alert("Inicia sesión para proponer un trato."); return;
+    }
+    const code = mc.getAttribute("data-code");
+    const mode = mc.getAttribute("data-mode");
+    const priceStr = mc.getAttribute("data-price");
+    const oid = mc.getAttribute("data-oid");
+    const oname = mc.getAttribute("data-oname");
+    const ocontact = mc.getAttribute("data-ocontact");
+    if (!oid) { window.alert("No se pudo identificar al usuario."); return; }
+    const s = codeIndex[code];
+    const label = s ? s.codeLabel : code;
+    const what = mode === "venta" ? ("comprar" + (priceStr ? " (" + priceStr + ")" : "")) : "cambiar";
+    if (!window.confirm("¿Proponer " + what + " " + label + " a " + oname + "?\n\nSe le avisará y, si acepta, veréis vuestros contactos para cerrar el trato.")) return;
+    window.Cloud.createTrade({
+      toUser: oid, toName: oname, toContact: ocontact,
+      code: code, mode: mode, price: priceStr ? Number(priceStr) : null,
+    }).then(function () {
+      window.alert("¡Propuesta enviada! La verás en la pestaña 🤝 Tratos.");
+    }).catch(function () {
+      window.alert("No se pudo enviar la propuesta. ¿Creaste la tabla 'trades' en Supabase?");
+    });
+  }
+
+  function tradeLabel(t) {
+    const s = codeIndex[t.code];
+    const name = s ? (flagFor(s) + " " + nameOf(s)) : t.code;
+    const where = s ? s.codeLabel : t.code;
+    const modo = t.mode === "venta" ? ("💲 Venta" + (t.price != null ? " · " + t.price : "")) : "🔁 Cambio";
+    return { name: escapeHTML(name), where: escapeHTML(where), modo: modo };
+  }
+
+  function contactLine(label, contact) {
+    const c = (contact || "").trim();
+    if (!c) return '<div class="tr-contact">' + label + ': <i>sin contacto</i></div>';
+    return '<div class="tr-contact">' + label + ': ' + contactBtnHTML(c) + '</div>';
+  }
+
+  function renderTrades() {
+    const host = el("#content");
+    if (!window.Cloud || !window.Cloud.fetchTrades || !window.Cloud.isOnline()) {
+      host.innerHTML = '<div class="empty">Inicia sesión para ver tus tratos. ☁️</div>'; return;
+    }
+    host.innerHTML = '<div class="empty">Cargando tratos… ⏳</div>';
+    window.Cloud.fetchTrades().then(function (rows) {
+      host.innerHTML = tradesHTML(rows || []);
+      refreshTradesBadge();
+    }).catch(function () {
+      host.innerHTML = '<div class="empty">No se pudieron cargar los tratos. ¿Creaste la tabla "trades" en Supabase?</div>';
+    });
+  }
+
+  function tradesHTML(rows) {
+    const me = window.Cloud.myId ? window.Cloud.myId() : null;
+    const recibidos = [], enviados = [], historial = [];
+    rows.forEach(function (t) {
+      const mine = t.from_user === me;
+      if (t.status === "pendiente") { (mine ? enviados : recibidos).push(t); }
+      else historial.push(t);
+    });
+
+    function card(t, role) {
+      const L = tradeLabel(t);
+      const otherName = role === "recibido" ? (t.from_name || "Alguien") : (t.to_name || "Coleccionista");
+      let actions = "", contacts = "";
+      if (t.status === "pendiente" && role === "recibido") {
+        actions = '<div class="tr-actions">' +
+          '<button class="tr-btn ok" data-trade="' + t.id + '" data-action="aceptar">✓ Aceptar</button>' +
+          '<button class="tr-btn no" data-trade="' + t.id + '" data-action="rechazar">✕ Rechazar</button></div>';
+      } else if (t.status === "pendiente" && role === "enviado") {
+        actions = '<div class="tr-actions"><button class="tr-btn" data-trade="' + t.id + '" data-action="cancelar">Cancelar</button></div>';
+      } else if (t.status === "aceptada") {
+        // Ambas partes ven los contactos para cerrar el trato.
+        contacts = contactLine("Tú", role === "recibido" ? t.to_contact : t.from_contact) +
+                   contactLine(escapeHTML(otherName), role === "recibido" ? t.from_contact : t.to_contact);
+        actions = '<div class="tr-actions"><button class="tr-btn ok" data-trade="' + t.id + '" data-action="completar">Marcar completado</button></div>';
+      }
+      const statusChip = '<span class="tr-status st-' + t.status + '">' + t.status + '</span>';
+      return '<div class="tr-card">' +
+        '<div class="tr-top"><div class="tr-code">' + L.where + '</div>' +
+          '<div class="tr-info"><div class="tr-name">' + L.name + '</div>' +
+            '<div class="tr-sub">' + (role === "recibido" ? ("De " + escapeHTML(otherName)) : ("Para " + escapeHTML(otherName))) + ' · ' + L.modo + '</div></div>' +
+          statusChip + '</div>' + contacts + actions + '</div>';
+    }
+
+    let html = "";
+    html += '<div class="tr-sec-title">📥 Recibidos</div>';
+    html += recibidos.length ? recibidos.map(function (t) { return card(t, "recibido"); }).join("") : '<div class="empty sm">Sin propuestas nuevas.</div>';
+    html += '<div class="tr-sec-title">📤 Enviados</div>';
+    html += enviados.length ? enviados.map(function (t) { return card(t, "enviado"); }).join("") : '<div class="empty sm">No has propuesto nada aún. Ve al 🛒 Mercado y toca un cromo para proponer.</div>';
+    html += '<div class="tr-sec-title">✅ Historial</div>';
+    html += historial.length ? historial.map(function (t) { return card(t, t.from_user === me ? "enviado" : "recibido"); }).join("") : '<div class="empty sm">Aún no hay tratos cerrados.</div>';
+    return html;
+  }
+
+  function handleTradeAction(id, action) {
+    const map = { aceptar: "aceptada", rechazar: "rechazada", completar: "completada", cancelar: "cancelada" };
+    const status = map[action];
+    if (!status || !window.Cloud || !window.Cloud.setTradeStatus) return;
+    window.Cloud.setTradeStatus(id, status).then(function () { renderTrades(); })
+      .catch(function () { window.alert("No se pudo actualizar el trato."); });
+  }
+
+  function refreshTradesBadge() {
+    if (!window.Cloud || !window.Cloud.pendingTradesCount) return;
+    window.Cloud.pendingTradesCount().then(function (n) {
+      const b = el("#trades-badge");
+      if (!b) return;
+      if (n > 0) { b.textContent = n; b.hidden = false; } else { b.hidden = true; }
+    });
   }
 
   // ---------- Render principal ----------
@@ -474,6 +595,7 @@
       if (currentTab === "album") renderAlbum();
       else if (currentTab === "missing") renderMissing();
       else if (currentTab === "market") renderMarket();
+      else if (currentTab === "trades") renderTrades();
       else renderDuplicates();
     } catch (err) {
       // Nunca dejar la pantalla en blanco: mostrar el error para diagnosticar.
@@ -535,6 +657,14 @@
       if (e.target.closest("[data-mkt-missing]")) { mktOnlyMissing = !mktOnlyMissing; renderMarket(); return; }
       const mModeBtn = e.target.closest("[data-mkt-mode]");
       if (mModeBtn) { mktMode = mModeBtn.getAttribute("data-mkt-mode"); renderMarket(); return; }
+
+      // Proponer trato desde el Mercado (tocar un mini-cromo de otra persona)
+      const offerEl = e.target.closest(".mc-offer[data-code]");
+      if (offerEl && currentTab === "market") { proposeTradeFromEl(offerEl); return; }
+
+      // Acciones de Tratos (aceptar / rechazar / completar / cancelar)
+      const trBtn = e.target.closest("[data-trade]");
+      if (trBtn) { handleTradeAction(trBtn.getAttribute("data-trade"), trBtn.getAttribute("data-action")); return; }
 
       const cell = e.target.closest(".cell");
       const row = e.target.closest(".dup-row");
@@ -895,8 +1025,8 @@
     if (ep) ep.style.display = (A.extrasTotal > 0) ? "" : "none";
   }
 
-  // Exponemos render() para que la nube refresque la pantalla tras sincronizar.
-  window.WunderApp = { render: render };
+  // Exponemos render() y el contador de tratos para que la nube los refresque.
+  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge };
 
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {

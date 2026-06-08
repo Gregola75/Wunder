@@ -443,11 +443,11 @@ body.locked .header-fab { display: none; }
 #search::placeholder { color: #6f86ad; }
 
 /* ---------- Pestañas ---------- */
-.tabs { display: flex; gap: 8px; margin-top: 10px; }
+.tabs { display: flex; gap: 6px; margin-top: 10px; }
 .tab {
-  flex: 1; padding: 10px; border-radius: 12px; cursor: pointer;
+  flex: 1; padding: 10px 4px; border-radius: 12px; cursor: pointer;
   background: var(--card); border: 1px solid var(--line);
-  color: var(--muted); font-size: 14px; font-weight: 600;
+  color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap;
 }
 .tab.active {
   color: #0b1220; background: linear-gradient(180deg, var(--accent), #3f6fe0);
@@ -646,3 +646,32 @@ body.locked .header-fab { display: none; }
 }
 
 .set-install { background: var(--accent); color: #0b1220; border-color: transparent; font-weight: 700; text-align: center; }
+
+/* ---------- Tratos (transacciones) ---------- */
+.tab-badge {
+  display: inline-block; min-width: 16px; height: 16px; line-height: 16px;
+  padding: 0 4px; margin-left: 5px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; vertical-align: middle;
+}
+.tab-badge[hidden] { display: none; }
+.mc-offer { cursor: pointer; }
+.mc-offer:active { transform: scale(.95); }
+
+.tr-sec-title { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; color: var(--muted); margin: 16px 2px 8px; }
+.tr-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: var(--shadow); }
+.tr-top { display: flex; align-items: center; gap: 10px; }
+.tr-code { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 13px; background: #0d1117; border: 1px solid var(--line); color: var(--gold); padding: 4px 8px; border-radius: 8px; white-space: nowrap; }
+.tr-info { flex: 1; min-width: 0; }
+.tr-name { font-size: 14px; font-weight: 600; }
+.tr-sub { font-size: 12px; color: var(--muted); }
+.tr-status { flex: 0 0 auto; font-size: 10px; font-weight: 800; letter-spacing: .5px; padding: 3px 9px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); color: var(--muted); text-transform: capitalize; }
+.tr-status.st-aceptada { background: rgba(63,185,80,.18); color: #5fcf86; border-color: rgba(63,185,80,.4); }
+.tr-status.st-rechazada, .tr-status.st-cancelada { color: #f0626c; }
+.tr-status.st-completada { background: rgba(91,140,255,.18); color: var(--accent); border-color: rgba(91,140,255,.4); }
+.tr-contact { font-size: 13px; margin-top: 8px; }
+.tr-contact .mkt-contact, .tr-contact .ucard-contact { font-size: 13px; }
+.tr-actions { display: flex; gap: 8px; margin-top: 10px; }
+.tr-btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; background: var(--card-2); border: 1px solid var(--line); color: var(--text); }
+.tr-btn.ok { background: var(--accent); color: #0b1220; border-color: transparent; }
+.tr-btn.no { color: var(--danger); border-color: rgba(240,98,108,.4); }
+.empty.sm { padding: 10px; font-size: 13px; }
