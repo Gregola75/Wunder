@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=38" />
+  <link rel="stylesheet" href="styles.css?v=39" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -165,36 +165,17 @@
     <div class="coll-body" id="coll-body"></div>
   </div>
 
-  <!-- Chat de negociación (ventana modal, por trato) -->
-  <div class="chat-backdrop" id="chat" hidden>
-    <div class="chat-panel">
-      <div class="chat-head">
-        <div class="chat-titlewrap">
-          <div class="chat-title" id="chat-title">Chat</div>
-          <div class="chat-sub" id="chat-sub"></div>
-        </div>
-        <button class="chat-x" id="chat-close" aria-label="Cerrar" onclick="var c=document.getElementById('chat'); if(window.WunderApp&&window.WunderApp.closeChat){window.WunderApp.closeChat();} else if(c){c.hidden=true;}">✕</button>
-      </div>
-      <div class="chat-actions" id="chat-actions"></div>
-      <div class="chat-msgs" id="chat-msgs"></div>
-      <form class="chat-form" id="chat-form">
-        <input id="chat-input" type="text" placeholder="Escribe un mensaje…" autocomplete="off" maxlength="500" />
-        <button type="submit" class="chat-send">Enviar</button>
-      </form>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=38"></script>
-  <script src="js/collections.js?v=38"></script>
-  <script src="js/worldcups.js?v=38"></script>
-  <script src="js/adrenalyn.js?v=38"></script>
-  <script src="js/players.js?v=38"></script>
-  <script src="js/wcplayers.js?v=38"></script>
-  <script src="js/data.js?v=38"></script>
-  <script src="js/storage.js?v=38"></script>
-  <script src="js/cloud.js?v=38"></script>
-  <script src="js/app.js?v=38"></script>
+  <script src="js/config.js?v=39"></script>
+  <script src="js/collections.js?v=39"></script>
+  <script src="js/worldcups.js?v=39"></script>
+  <script src="js/adrenalyn.js?v=39"></script>
+  <script src="js/players.js?v=39"></script>
+  <script src="js/wcplayers.js?v=39"></script>
+  <script src="js/data.js?v=39"></script>
+  <script src="js/storage.js?v=39"></script>
+  <script src="js/cloud.js?v=39"></script>
+  <script src="js/app.js?v=39"></script>
   <script>
     // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {

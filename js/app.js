@@ -510,6 +510,7 @@
   }
 
   function renderTrades() {
+    closeChat(); // limpia cualquier chat en línea abierto antes de re-dibujar
     const host = el("#content");
     if (!window.Cloud || !window.Cloud.fetchTrades || !window.Cloud.isOnline()) {
       host.innerHTML = '<div class="empty">Inicia sesión para ver tus tratos. ☁️</div>'; return;
@@ -558,7 +559,9 @@
         '<div class="tr-top"><div class="tr-code">' + L.where + '</div>' +
           '<div class="tr-info"><div class="tr-name">' + L.name + '</div>' +
             '<div class="tr-sub">' + (role === "recibido" ? ("De " + escapeHTML(otherName)) : ("Para " + escapeHTML(otherName))) + ' · ' + L.modo + '</div></div>' +
-          statusChip + '</div>' + contacts + actions + '</div>';
+          statusChip + '</div>' + contacts + actions +
+        '<div class="tr-chat" data-chatbox="' + t.id + '" hidden></div>' +
+        '</div>';
     }
 
     let html = "";
@@ -596,75 +599,72 @@
     try { return (k && localStorage.getItem(k)) || "1970-01-01"; } catch (e) { return "1970-01-01"; }
   }
 
-  function chatActionsHTML(role, status) {
-    if (status === "pendiente" && role === "recibido") {
-      return '<button class="tr-btn ok" data-cact="aceptar">✅ Cerrar trato (apartar)</button>' +
-             '<button class="tr-btn no" data-cact="rechazar">✕ Rechazar</button>';
-    }
-    if (status === "pendiente" && role === "enviado") {
-      return '<div class="chat-note">Esperando que el dueño cierre el trato contigo.</div>' +
-             '<button class="tr-btn" data-cact="cancelar">Cancelar propuesta</button>';
-    }
-    if (status === "aceptada") {
-      return '<div class="chat-note">✅ Trato apartado. Coordinad la entrega por aquí y marcad completado.</div>' +
-             '<button class="tr-btn ok" data-cact="completar">Marcar completado</button>';
-    }
-    return "";
-  }
-
-  function openChat(tradeId, otherId, otherName, ctx, role, status) {
-    if (!window.Cloud || !window.Cloud.fetchMessages || !window.Cloud.isOnline()) {
-      window.alert("Inicia sesión para chatear."); return;
-    }
-    chatState = { tradeId: tradeId, otherId: otherId, msgs: [], channel: null, poll: null };
-    el("#chat-title").textContent = "💬 " + (otherName || "Trato");
-    const sub = el("#chat-sub"); if (sub) sub.textContent = ctx || "";
-    const acts = el("#chat-actions"); if (acts) acts.innerHTML = chatActionsHTML(role, status);
-    el("#chat-msgs").innerHTML = '<div class="empty sm">Cargando…</div>';
-    el("#chat-input").value = "";
-    el("#chat").hidden = false;
-    markChatSeen();
-
-    function merge(arr) {
-      arr.forEach(function (m) { if (!chatState.msgs.some(function (x) { return x.id === m.id; })) chatState.msgs.push(m); });
-      chatState.msgs.sort(function (a, b) { return (a.created_at || "").localeCompare(b.created_at || ""); });
-      renderChatMsgs();
-    }
-    chatState.merge = merge;
-
-    window.Cloud.fetchMessages(tradeId).then(function (list) {
-      if (!chatState) return; chatState.msgs = []; merge(list || []);
-    }).catch(function () {
-      el("#chat-msgs").innerHTML = '<div class="empty sm">No se pudo cargar el chat. ¿Creaste la tabla "messages" en Supabase?</div>';
-    });
-    chatState.channel = window.Cloud.subscribeMessages(tradeId, function (m) { if (chatState) chatState.merge([m]); });
-    chatState.poll = setInterval(function () {
-      window.Cloud.fetchMessages(tradeId).then(function (list) { if (chatState) chatState.merge(list || []); }).catch(function () {});
-    }, 4000);
-  }
-  function renderChatMsgs() {
-    const me = window.Cloud.myId ? window.Cloud.myId() : null;
-    const host = el("#chat-msgs");
-    if (!chatState || !chatState.msgs.length) { host.innerHTML = '<div class="empty sm">Aún no hay mensajes. ¡Escribe el primero para negociar! 💬</div>'; return; }
-    host.innerHTML = chatState.msgs.map(function (m) {
-      const mine = m.from_user === me;
-      return '<div class="bubble ' + (mine ? "me" : "them") + '">' + escapeHTML(m.text) + '</div>';
-    }).join("");
-    host.scrollTop = host.scrollHeight;
-  }
   function closeChat() {
     if (chatState) {
       if (chatState.channel) window.Cloud.unsubscribe(chatState.channel);
       if (chatState.poll) clearInterval(chatState.poll);
     }
     chatState = null;
-    el("#chat").hidden = true;
+    document.querySelectorAll("[data-chatbox]").forEach(function (b) { b.hidden = true; b.innerHTML = ""; });
     markChatSeen();
     refreshTradesBadge();
   }
-  function sendChat() {
-    if (!chatState) return;
-    const inp = el("#chat-input");
+
+  // Abre/cierra el chat EN LÍNEA dentro del propio trato (sin ventanas).
+  function toggleInlineChat(tradeId, otherId) {
+    const box = document.querySelector('[data-chatbox="' + tradeId + '"]');
+    if (!box) return;
+    const wasOpen = chatState && chatState.tradeId === tradeId && !box.hidden;
+    closeChat(); // cierra cualquier chat abierto y limpia
+    if (wasOpen) return; // si tocaste el que estaba abierto, solo cerrar
+    if (!window.Cloud || !window.Cloud.fetchMessages || !window.Cloud.isOnline()) {
+      window.alert("Inicia sesión para chatear."); return;
+    }
+    box.hidden = false;
+    box.innerHTML =
+      '<div class="trc-msgs"><div class="empty sm">Cargando…</div></div>' +
+      '<form class="trc-form"><input class="trc-input" type="text" placeholder="Escribe un mensaje…" maxlength="500" autocomplete="off" /><button type="submit">Enviar</button></form>';
+    chatState = { tradeId: tradeId, otherId: otherId, msgs: [], channel: null, poll: null, box: box };
+    markChatSeen();
+
+    chatState.merge = function (arr) {
+      arr.forEach(function (m) { if (!chatState.msgs.some(function (x) { return x.id === m.id; })) chatState.msgs.push(m); });
+      chatState.msgs.sort(function (a, b) { return (a.created_at || "").localeCompare(b.created_at || ""); });
+      renderInlineMsgs();
+    };
+
+    window.Cloud.fetchMessages(tradeId).then(function (list) {
+      if (!chatState || chatState.tradeId !== tradeId) return;
+      chatState.msgs = []; chatState.merge(list || []);
+    }).catch(function () {
+      const m = box.querySelector(".trc-msgs"); if (m) m.innerHTML = '<div class="empty sm">No se pudo cargar el chat. ¿Creaste la tabla "messages" en Supabase?</div>';
+    });
+    chatState.channel = window.Cloud.subscribeMessages(tradeId, function (m) { if (chatState && chatState.tradeId === tradeId) chatState.merge([m]); });
+    chatState.poll = setInterval(function () {
+      window.Cloud.fetchMessages(tradeId).then(function (list) { if (chatState && chatState.tradeId === tradeId) chatState.merge(list || []); }).catch(function () {});
+    }, 4000);
+
+    const form = box.querySelector(".trc-form");
+    if (form) form.addEventListener("submit", function (e) { e.preventDefault(); sendInlineChat(); });
+    const inp = box.querySelector(".trc-input"); if (inp) inp.focus();
+  }
+
+  function renderInlineMsgs() {
+    if (!chatState || !chatState.box) return;
+    const me = window.Cloud.myId ? window.Cloud.myId() : null;
+    const host = chatState.box.querySelector(".trc-msgs");
+    if (!host) return;
+    if (!chatState.msgs.length) { host.innerHTML = '<div class="empty sm">Aún no hay mensajes. ¡Escribe el primero para negociar! 💬</div>'; return; }
+    host.innerHTML = chatState.msgs.map(function (m) {
+      const mine = m.from_user === me;
+      return '<div class="bubble ' + (mine ? "me" : "them") + '">' + escapeHTML(m.text) + '</div>';
+    }).join("");
+    host.scrollTop = host.scrollHeight;
+  }
+
+  function sendInlineChat() {
+    if (!chatState || !chatState.box) return;
+    const inp = chatState.box.querySelector(".trc-input");
     const t = (inp.value || "").trim();
     if (!t) return;
     inp.value = "";
@@ -783,12 +783,10 @@
       const offerEl = e.target.closest(".mc-offer[data-code]");
       if (offerEl && currentTab === "market") { proposeTradeFromEl(offerEl); return; }
 
-      // Chat de un trato
+      // Chat de un trato (se despliega dentro del propio trato)
       const chatBtn = e.target.closest("[data-chat]");
       if (chatBtn) {
-        openChat(chatBtn.getAttribute("data-chat"), chatBtn.getAttribute("data-other"),
-          chatBtn.getAttribute("data-othername"), chatBtn.getAttribute("data-ctx"),
-          chatBtn.getAttribute("data-role"), chatBtn.getAttribute("data-status"));
+        toggleInlineChat(chatBtn.getAttribute("data-chat"), chatBtn.getAttribute("data-other"));
         return;
       }
 
@@ -909,25 +907,6 @@
     syncPriv();
     window.WunderApp = window.WunderApp || {};
     window.WunderApp.syncPrivacy = syncPriv;
-
-    // Chat
-    const chatForm = el("#chat-form");
-    if (chatForm) chatForm.addEventListener("submit", function (e) { e.preventDefault(); sendChat(); });
-    const chatCloseBtn = el("#chat-close");
-    if (chatCloseBtn) chatCloseBtn.addEventListener("click", closeChat);
-    // Tocar fuera de la ventana del chat (el fondo) la cierra.
-    const chatBd = el("#chat");
-    if (chatBd) chatBd.addEventListener("click", function (e) { if (e.target.id === "chat") closeChat(); });
-    const chatActs = el("#chat-actions");
-    if (chatActs) chatActs.addEventListener("click", function (e) {
-      const b = e.target.closest("[data-cact]");
-      if (!b || !chatState) return;
-      const tid = chatState.tradeId;
-      handleTradeAction(tid, b.getAttribute("data-cact"));
-      closeChat();
-      currentTab = "trades";
-      render();
-    });
 
     // Aviso de propuestas/mensajes nuevos cada 30s mientras la app está abierta.
     setInterval(function () { if (window.Cloud && window.Cloud.isOnline && window.Cloud.isOnline()) refreshTradesBadge(); }, 30000);
