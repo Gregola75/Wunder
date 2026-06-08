@@ -180,6 +180,8 @@
 
   function pullMergePush() {
     if (!session) return;
+    // Cargamos el cajón LOCAL de ESTE usuario (no el del que usó antes el móvil).
+    if (window.Store && window.Store.useUser) window.Store.useUser(session.user.id);
     setStatus("sincronizando…");
     // Traemos mi álbum (mapa por colección) y mi fila de mercado (para conservar
     // las ofertas de otras colecciones al republicar).
@@ -298,7 +300,13 @@
     applyGate();
     renderAccountBox();
     if (event === "SIGNED_IN") pullMergePush();
-    else if (event === "SIGNED_OUT") setStatus("local");
+    else if (event === "SIGNED_OUT") {
+      // Al salir, vaciamos el estado para que el siguiente usuario no herede nada.
+      if (window.Store && window.Store.useUser) window.Store.useUser(null);
+      cloudAlbums = {}; marketMine = {};
+      refreshUI();
+      setStatus("local");
+    }
   });
 
   // Bloqueamos de inmediato hasta saber si hay sesión (evita ver la app un instante).

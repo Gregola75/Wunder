@@ -17,11 +17,12 @@
 (function () {
   "use strict";
 
-  // Cada colección guarda su progreso por separado. El Mundial 2026 conserva
-  // su clave histórica para no perder datos de usuarios actuales.
+  // El progreso se guarda POR USUARIO y por colección: cada cuenta tiene su
+  // propio "cajón" en el dispositivo, para que en un mismo móvil dos correos
+  // distintos NO compartan los cromos. Al entrar, manda la nube de ESA cuenta.
   const ACTIVE = (window.COLLECTIONS && window.COLLECTIONS.active) || "wc2026";
-  const KEY = ACTIVE === "wc2026" ? "wunder.album.wc2026.v2" : "swalbum." + ACTIVE + ".v2";
-  const OLD_KEY = "wunder.album.wc2026.v1"; // formato viejo (por posición) — solo 2026
+  let CURRENT_UID = null;
+  let KEY = null;
 
   function empty() {
     return { counts: {}, names: {}, listings: {}, settings: {} };
@@ -45,50 +46,20 @@
     }
   }
 
-  // Convierte datos viejos (claves sNN por posición) a claves por código.
-  function migrateOld(old) {
-    const A = window.ALBUM;
-    const out = empty();
-    if (!A) return out;
-    function conv(obj, dest) {
-      Object.keys(obj || {}).forEach(function (id) {
-        const st = A.byId[id];
-        const code = st ? st.code : id; // si no se encuentra, deja la clave
-        dest[code] = obj[id];
-      });
-    }
-    conv(old.counts, out.counts);
-    conv(old.names, out.names);
-    return out;
+  function normalize(obj) {
+    return Object.assign(empty(), obj || {}, {
+      counts: (obj && obj.counts) || {},
+      names: (obj && obj.names) || {},
+      listings: (obj && obj.listings) || {},
+      settings: (obj && obj.settings) || {},
+    });
   }
 
-  function load() {
-    const current = read(KEY);
-    if (current) {
-      return Object.assign(empty(), current, {
-        counts: current.counts || {},
-        names: current.names || {},
-        listings: current.listings || {},
-        settings: current.settings || {},
-      });
-    }
-    // No hay datos nuevos: ¿hay datos viejos que migrar?
-    // OJO: el formato viejo (OLD_KEY) es SOLO del Mundial 2026. No debe cargarse
-    // en otras ediciones (cada colección empieza vacía / 0% si no tienes nada).
-    const old = ACTIVE === "wc2026" ? read(OLD_KEY) : null;
-    if (old && (old.counts || old.names)) {
-      const migrated = migrateOld(old);
-      try { localStorage.setItem(KEY, JSON.stringify(migrated)); } catch (e) {}
-      // OJO: NO borramos OLD_KEY; queda como respaldo de seguridad.
-      console.info("Datos migrados al nuevo formato (por código). Respaldo viejo conservado.");
-      return migrated;
-    }
-    return empty();
-  }
-
-  let state = load();
+  // Estado vacío hasta que un usuario inicie sesión (Cloud llama a useUser).
+  let state = empty();
 
   function persist() {
+    if (!KEY) return; // sin usuario activo no guardamos en el dispositivo
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
     } catch (e) {
@@ -100,6 +71,14 @@
   }
 
   const Store = {
+    // Cambia el usuario activo: carga su cajón propio (o vacío si no hay sesión).
+    useUser: function (uid) {
+      CURRENT_UID = uid || null;
+      KEY = CURRENT_UID ? ("swalbum.u_" + CURRENT_UID + "." + ACTIVE + ".v2") : null;
+      state = KEY ? normalize(read(KEY)) : empty();
+      return state;
+    },
+
     // --- cantidades ---
     getCount: function (id) {
       return state.counts[codeFor(id)] || 0;
