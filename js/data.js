@@ -150,8 +150,8 @@
   const OPENING_FWC = [
     "Trofeo de la Copa Mundial (1)", // FWC 1
     "Trofeo de la Copa Mundial (2)", // FWC 2
-    "Emblema oficial FIFA 2026",     // FWC 3
-    "Mascotas oficiales",            // FWC 4
+    "Mascotas oficiales",            // FWC 3
+    "Emblema oficial FIFA 2026",     // FWC 4
     "Balón oficial",                 // FWC 5
     "Eslogan oficial",               // FWC 6
     "Anfitrión: Canadá",             // FWC 7
