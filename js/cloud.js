@@ -410,6 +410,34 @@
     },
   };
 
+  // ---------- bandeja en tiempo real (avisos al instante) ----------
+  // Escuchamos los tratos y mensajes dirigidos A MÍ y avisamos sin recargar.
+  var inboxChannels = [];
+  function unsubscribeInbox() {
+    inboxChannels.forEach(function (ch) { try { if (sb.removeChannel) sb.removeChannel(ch); } catch (e) {} });
+    inboxChannels = [];
+  }
+  function onInbox(type, row) {
+    if (window.WunderApp && window.WunderApp.notifyInbox) {
+      try { window.WunderApp.notifyInbox(type, row); } catch (e) {}
+    }
+  }
+  function subscribeInbox() {
+    unsubscribeInbox();
+    if (!session || !sb.channel) return;
+    var uid = session.user.id;
+    try {
+      var t = sb.channel("inbox-trades-" + uid).on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "trades", filter: "to_user=eq." + uid },
+        function (p) { onInbox("trade", p.new); }).subscribe();
+      inboxChannels.push(t);
+      var m = sb.channel("inbox-msgs-" + uid).on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: "to_user=eq." + uid },
+        function (p) { onInbox("message", p.new); }).subscribe();
+      inboxChannels.push(m);
+    } catch (e) { console.warn("Realtime no disponible:", e); }
+  }
+
   // ---------- eventos (delegación, una sola vez) ----------
   document.addEventListener("click", function (e) {
     var btn = e.target.closest && e.target.closest("[data-auth]");
@@ -429,9 +457,10 @@
     session = sess;
     applyGate();
     renderAccountBox();
-    if (event === "SIGNED_IN") pullMergePush();
+    if (event === "SIGNED_IN") { pullMergePush(); subscribeInbox(); }
     else if (event === "SIGNED_OUT") {
       // Al salir, vaciamos el estado para que el siguiente usuario no herede nada.
+      unsubscribeInbox();
       if (window.Store && window.Store.useUser) window.Store.useUser(null);
       cloudAlbums = {}; marketMine = {};
       refreshUI();
@@ -445,6 +474,6 @@
     session = r.data.session;
     applyGate();
     renderAccountBox();
-    if (session) pullMergePush(); else setStatus("local");
+    if (session) { pullMergePush(); subscribeInbox(); } else setStatus("local");
   });
 })();

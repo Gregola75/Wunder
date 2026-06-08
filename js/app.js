@@ -837,6 +837,88 @@
     });
   }
 
+  // ---------- Avisos en tiempo real ----------
+  // Banner ligero arriba; al tocarlo, te lleva a Tratos. Se quita solo.
+  function showToast(text, onClick) {
+    let host = document.getElementById("toasts");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "toasts"; host.className = "toasts";
+      document.body.appendChild(host);
+    }
+    const t = document.createElement("button");
+    t.className = "toast";
+    t.innerHTML = escapeHTML(text);
+    t.addEventListener("click", function () {
+      if (onClick) onClick();
+      if (t.parentNode) t.parentNode.removeChild(t);
+    });
+    host.appendChild(t);
+    setTimeout(function () { t.classList.add("show"); }, 20);
+    setTimeout(function () {
+      t.classList.remove("show");
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 7000);
+  }
+
+  // Aviso del sistema (cuando la pestaña no está visible y diste permiso).
+  function maybeSystemNotify(text) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      if (!document.hidden) return; // si la estás mirando, basta el banner
+      const n = new Notification("Swalbum", { body: text, icon: "assets/logo/icon-192.png", tag: "swalbum-inbox" });
+      n.onclick = function () { window.focus(); n.close(); };
+    } catch (e) {}
+  }
+
+  function goToTrades() {
+    if (el("#settings")) el("#settings").hidden = true;
+    if (el("#friends")) el("#friends").hidden = true;
+    currentTab = "trades";
+    window.scrollTo(0, 0);
+    render();
+  }
+
+  // Llamado por la nube (Realtime) al llegar un trato o mensaje dirigido a mí.
+  function notifyInbox(type, row) {
+    refreshTradesBadge(); // el contador sube al instante
+    // Si ya tienes abierto el chat de ese trato, no hace falta avisar.
+    if (type === "message" && chatState && chatState.tradeId === row.trade_id) return;
+    let text;
+    if (type === "trade") {
+      const s = codeIndex[row.code];
+      const label = s ? s.codeLabel : (row.code || "");
+      text = "🤝 " + (row.from_name || "Alguien") + " te propone un trato · " + label;
+    } else {
+      const snippet = (row.text || "").slice(0, 70);
+      text = "💬 Nuevo mensaje: " + snippet;
+    }
+    showToast(text, goToTrades);
+    maybeSystemNotify(text);
+  }
+
+  // Pide permiso para los avisos del sistema (botón en Configuración).
+  function enableNotifications() {
+    if (!("Notification" in window)) {
+      window.alert("Tu navegador no admite avisos del sistema. Aun así verás los avisos dentro de la app.");
+      return;
+    }
+    Notification.requestPermission().then(function (perm) {
+      syncNotifyBtn();
+      if (perm === "granted") window.alert("¡Avisos activados! 🔔 Te avisaremos de tratos y mensajes nuevos.");
+      else if (perm === "denied") window.alert("Has bloqueado los avisos. Puedes reactivarlos en los ajustes del navegador.");
+    });
+  }
+
+  function syncNotifyBtn() {
+    const b = el("#btn-notify");
+    if (!b) return;
+    if (!("Notification" in window)) { b.hidden = true; return; }
+    if (Notification.permission === "granted") { b.textContent = "🔔 Avisos activados ✓"; b.disabled = true; }
+    else if (Notification.permission === "denied") { b.textContent = "🔕 Avisos bloqueados (revisa el navegador)"; b.disabled = true; }
+    else { b.textContent = "🔔 Activar avisos en este dispositivo"; b.disabled = false; }
+  }
+
   // ---------- Foto del estado del cromo ----------
   // Reduce la imagen (máx. 1000px, JPEG) para subir rápido y ahorrar espacio.
   function compressImage(file) {
@@ -1150,6 +1232,11 @@
     window.WunderApp = window.WunderApp || {};
     window.WunderApp.syncPrivacy = syncPriv;
 
+    // Avisos del sistema (permiso)
+    const bnotify = el("#btn-notify");
+    if (bnotify) bnotify.addEventListener("click", enableNotifications);
+    syncNotifyBtn();
+
     // Amigos: abrir/cerrar la pantalla + acciones (aceptar/rechazar/eliminar).
     const bfr = el("#btn-friends");
     if (bfr) bfr.addEventListener("click", function () { el("#settings").hidden = true; openFriends(); });
@@ -1443,7 +1530,7 @@
   }
 
   // Exponemos funciones para la nube y para botones inline.
-  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge, refreshFriendsBadge: refreshFriendsBadge, closeChat: closeChat };
+  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge, refreshFriendsBadge: refreshFriendsBadge, closeChat: closeChat, notifyInbox: notifyInbox };
 
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {

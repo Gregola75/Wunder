@@ -740,6 +740,22 @@ body.locked .header-fab { display: none; }
 .lightbox[hidden] { display: none; }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 
+/* ---------- Avisos en tiempo real (toasts) ---------- */
+.toasts {
+  position: fixed; left: 0; right: 0; z-index: 210;
+  top: max(10px, env(safe-area-inset-top));
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 0 12px; pointer-events: none;
+}
+.toast {
+  pointer-events: auto; cursor: pointer; max-width: 480px; width: 100%;
+  text-align: left; font-size: 14px; font-weight: 600; color: var(--text);
+  background: var(--card); border: 1px solid var(--accent);
+  border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow);
+  transform: translateY(-16px); opacity: 0; transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show { transform: none; opacity: 1; }
+
 /* ---------- Chat de negociación (en línea) ---------- */
 .bubble {
   max-width: 78%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; word-wrap: break-word;
