@@ -1199,8 +1199,8 @@
     if (ep) ep.style.display = (A.extrasTotal > 0) ? "" : "none";
   }
 
-  // Exponemos render() y el contador de tratos para que la nube los refresque.
-  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge };
+  // Exponemos funciones para la nube y para botones inline.
+  window.WunderApp = { render: render, refreshTradesBadge: refreshTradesBadge, closeChat: closeChat };
 
   // ---------- Inicio ----------
   document.addEventListener("DOMContentLoaded", function () {

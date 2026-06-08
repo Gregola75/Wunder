@@ -696,7 +696,7 @@ body.locked .header-fab { display: none; }
   padding: max(12px, env(safe-area-inset-top)) 14px 12px;
   border-bottom: 1px solid var(--line); background: var(--bg-2);
 }
-.chat-back { background: var(--card-2); border: 1px solid var(--line); color: var(--text); width: 38px; height: 38px; border-radius: 10px; font-size: 18px; cursor: pointer; }
+.chat-back { background: var(--accent); border: none; color: #0b1220; height: 38px; padding: 0 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
 .chat-title { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 16px; }
 .chat-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
 .bubble {
