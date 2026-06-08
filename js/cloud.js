@@ -243,7 +243,7 @@
       var spare = (counts[code] || 0) - 1;
       if (spare >= 1) {
         var l = listings[code] || {};
-        out[code] = { mode: l.type || "cambio", price: (l.price == null ? null : l.price), spare: spare, cond: l.cond || 1 };
+        out[code] = { mode: l.type || "cambio", price: (l.price == null ? null : l.price), spare: spare, cond: l.cond || 1, photo: l.photo || null };
       }
     });
     return out;
@@ -300,6 +300,21 @@
           if (res.error) { console.warn(res.error); throw res.error; }
           return res.data || [];
         });
+    },
+    // ---- Foto del estado del cromo (Supabase Storage) ----
+    // Sube una imagen al bucket "cromos" en tu carpeta (uid) y devuelve su URL pública.
+    uploadCromoPhoto: function (code, blob, contentType) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      if (!sb.storage) return Promise.reject(new Error("Storage no disponible"));
+      var safe = String(code).replace(/[^A-Za-z0-9_-]/g, "");
+      var path = session.user.id + "/" + ACTIVE + "/" + safe + "-" + Date.now() + ".jpg";
+      return sb.storage.from("cromos").upload(path, blob, {
+        upsert: true, contentType: contentType || "image/jpeg", cacheControl: "3600",
+      }).then(function (res) {
+        if (res.error) throw res.error;
+        var pub = sb.storage.from("cromos").getPublicUrl(path);
+        return (pub && pub.data && pub.data.publicUrl) || null;
+      });
     },
     // ---- Tratos (transacciones) ----
     createTrade: function (t) {

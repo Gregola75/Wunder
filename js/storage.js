@@ -121,8 +121,19 @@
         const p = price == null || price === "" ? null : Math.max(0, Number(price) || 0);
         // cond = condición del cambio: 1 = trato simple (1x1), 2..6 = pide N a cambio.
         let c = cond == null ? (prev.cond || 1) : Math.max(1, Math.min(6, cond | 0));
-        state.listings[code] = { type: type, price: p, cond: c };
+        const next = { type: type, price: p, cond: c };
+        if (prev.photo) next.photo = prev.photo; // conservamos la foto si ya había
+        state.listings[code] = next;
       }
+      persist();
+    },
+
+    // --- foto del estado del cromo (URL en la nube) ---
+    setListingPhoto: function (id, url) {
+      const code = codeFor(id);
+      const prev = state.listings[code];
+      if (!prev) return; // solo se puede adjuntar foto a una repe anunciada
+      if (url) prev.photo = url; else delete prev.photo;
       persist();
     },
 

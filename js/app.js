@@ -299,8 +299,21 @@
       const lst = Store.getListing(s.id);
       const isCambio = lst && lst.type === "cambio";
       const isVenta = lst && lst.type === "venta";
+      const isListed = isCambio || isVenta;
       const priceVal = isVenta && lst.price != null ? lst.price : "";
       const cond = (lst && lst.cond) || 1;
+      const photo = lst && lst.photo;
+
+      function photoRow() {
+        const thumb = photo
+          ? '<img class="ph-thumb" src="' + escapeHTML(photo) + '" alt="foto del cromo" data-photo="' + escapeHTML(photo) + '" />'
+          : '<span class="ph-empty">📷</span>';
+        return '<div class="photo-row">' + thumb +
+          '<label class="ph-btn">' + (photo ? "Cambiar foto" : "📷 Añadir foto del estado") +
+            '<input type="file" accept="image/*" capture="environment" class="ph-input" hidden /></label>' +
+          (photo ? '<button class="ph-del" data-photodel="1" title="Quitar foto">✕</button>' : "") +
+          '</div>';
+      }
 
       function condBtns() {
         let out = '<div class="cond-row"><span class="cond-lbl">Condición del cambio:</span>';
@@ -326,6 +339,7 @@
             (isVenta ? '<input class="price-input" type="number" min="0" inputmode="decimal" placeholder="Precio" value="' + priceVal + '" />' : "") +
           '</div>' +
           (isCambio ? condBtns() : "") +
+          (isListed ? photoRow() : "") +
         '</div>';
     });
     html += '</div>';
@@ -402,6 +416,7 @@
         ' data-oname="' + escapeHTML(own.display_name || "Coleccionista") + '"' +
         ' data-ocontact="' + escapeHTML(own.contact || "") + '">' +
         (o.missing ? '<span class="mc-need">te falta</span>' : "") +
+        (o.photo ? '<button class="mc-photo" data-photo="' + escapeHTML(o.photo) + '" title="Ver foto del estado">📷</button>' : "") +
         '<div class="mc-flag">' + flagFor(s) + '</div>' +
         '<div class="mc-code">' + s.codeLabel + '</div>' +
         '<div class="mc-mode mkt-mode-' + o.mode + '">' + mode + '</div>' +
@@ -433,7 +448,7 @@
           if (hay.indexOf(query) === -1) return;
         }
         if (missing) needCount += 1;
-        items.push({ s: s, code: code, mode: mode, price: info.price, spare: info.spare || 1, missing: missing, cond: info.cond || 1 });
+        items.push({ s: s, code: code, mode: mode, price: info.price, spare: info.spare || 1, missing: missing, cond: info.cond || 1, photo: info.photo || null });
       });
       if (items.length === 0) return;
       items.sort(function (a, b) { if (a.missing !== b.missing) return a.missing ? -1 : 1; return a.code.localeCompare(b.code); });
@@ -822,6 +837,75 @@
     });
   }
 
+  // ---------- Foto del estado del cromo ----------
+  // Reduce la imagen (máx. 1000px, JPEG) para subir rápido y ahorrar espacio.
+  function compressImage(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          const max = 1000;
+          let w = img.width, h = img.height;
+          if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
+          else if (h >= w && h > max) { w = Math.round(w * max / h); h = max; }
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          canvas.toBlob(function (blob) {
+            if (blob) resolve(blob); else reject(new Error("No se pudo procesar la imagen"));
+          }, "image/jpeg", 0.72);
+        };
+        img.onerror = function () { reject(new Error("Imagen no válida")); };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { reject(new Error("No se pudo leer el archivo")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handlePhotoPick(input, id) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (!window.Cloud || !window.Cloud.uploadCromoPhoto || !window.Cloud.isOnline()) {
+      window.alert("Inicia sesión y conéctate para subir fotos."); input.value = ""; return;
+    }
+    const s = A.byId[id];
+    const code = s ? s.code : id;
+    const row = input.closest(".dup-row");
+    const lbl = input.closest(".ph-btn");
+    if (lbl) lbl.classList.add("loading");
+    const old = lbl ? lbl.textContent : "";
+    if (lbl) lbl.firstChild && (lbl.firstChild.textContent = "Subiendo… ⏳");
+    compressImage(file).then(function (blob) {
+      return window.Cloud.uploadCromoPhoto(code, blob, "image/jpeg");
+    }).then(function (url) {
+      if (!url) throw new Error("sin url");
+      Store.setListingPhoto(id, url); // dispara la sincronización al mercado
+      render();
+    }).catch(function (e) {
+      if (lbl) { lbl.classList.remove("loading"); lbl.firstChild && (lbl.firstChild.textContent = old); }
+      const m = String((e && e.message) || e);
+      if (/bucket|not found|does not exist/i.test(m)) window.alert("Falta crear el bucket 'cromos' en Supabase Storage. Sigue el paso que te indico.");
+      else window.alert("No se pudo subir la foto. Inténtalo de nuevo.");
+      console.warn("uploadCromoPhoto", e);
+    });
+    input.value = "";
+  }
+
+  function openLightbox(url) {
+    if (!url) return;
+    let lb = document.getElementById("lightbox");
+    if (!lb) {
+      lb = document.createElement("div");
+      lb.id = "lightbox"; lb.className = "lightbox";
+      lb.addEventListener("click", function () { lb.hidden = true; lb.innerHTML = ""; });
+      document.body.appendChild(lb);
+    }
+    lb.innerHTML = '<img src="' + escapeHTML(url) + '" alt="foto del cromo" />';
+    lb.hidden = false;
+  }
+
   // ---------- Render principal ----------
   function render() {
     // cualquier re-dibujo cancela un "doble toque" a medias
@@ -914,6 +998,17 @@
       if (e.target.closest("[data-mkt-missing]")) { mktOnlyMissing = !mktOnlyMissing; renderMarket(); return; }
       const mModeBtn = e.target.closest("[data-mkt-mode]");
       if (mModeBtn) { mktMode = mModeBtn.getAttribute("data-mkt-mode"); renderMarket(); return; }
+
+      // Ver una foto del estado del cromo a tamaño grande (repes o mercado)
+      const phView = e.target.closest("[data-photo]");
+      if (phView) { openLightbox(phView.getAttribute("data-photo")); return; }
+      // Quitar la foto de una repe
+      const phDel = e.target.closest("[data-photodel]");
+      if (phDel) {
+        const dr = phDel.closest(".dup-row");
+        if (dr) { Store.setListingPhoto(dr.dataset.id, null); render(); }
+        return;
+      }
 
       // Añadir amigo desde el Mercado
       const addFr = e.target.closest("[data-addfriend]");
@@ -1010,6 +1105,13 @@
       const row = e.target.closest(".dup-row");
       if (!row) return;
       Store.setListing(row.dataset.id, "venta", e.target.value);
+    });
+
+    // Selección de foto del estado del cromo (pestaña Repes)
+    el("#content").addEventListener("change", function (e) {
+      if (!e.target.classList.contains("ph-input")) return;
+      const row = e.target.closest(".dup-row");
+      if (row) handlePhotoPick(e.target, row.dataset.id);
     });
 
     // Contacto del usuario (para cambios/ventas)
