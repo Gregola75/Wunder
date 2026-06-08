@@ -112,7 +112,8 @@
         }
         tadd("badge", "Escudo " + t[0], true);
         tadd("team_photo", "Plantilla " + t[0], false);
-        for (var p = 1; p <= players; p++) tadd("player", "Jugador " + p, false);
+        var roster = (window.WC_PLAYERS && window.WC_PLAYERS[id] && window.WC_PLAYERS[id][teamId]) || null;
+        for (var p = 1; p <= players; p++) tadd("player", (roster && roster[p - 1]) || ("Jugador " + p), false);
         teams.push(team);
       });
     });
