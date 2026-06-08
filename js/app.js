@@ -625,6 +625,53 @@
     return '<div class="tr-contact">' + label + ': ' + contactBtnHTML(c) + '</div>';
   }
 
+  // Caché de los últimos tratos cargados (para actuar al pulsar un botón).
+  let tradeRows = [];
+
+  // ---- Actualizar el álbum cuando un cambio se COMPLETA ----
+  // Cada usuario aplica SU lado: recibe (+1, sale de Faltan) y entrega (−1 repe).
+  function appliedKey() {
+    const id = window.Cloud && window.Cloud.myId ? window.Cloud.myId() : null;
+    return id ? ("swalbum.applied." + id) : null;
+  }
+  function getApplied() {
+    try { return JSON.parse(localStorage.getItem(appliedKey()) || "[]"); } catch (e) { return []; }
+  }
+  function markApplied(id) {
+    const k = appliedKey(); if (!k) return;
+    const a = getApplied();
+    if (a.indexOf(id) === -1) { a.push(id); try { localStorage.setItem(k, JSON.stringify(a)); } catch (e) {} }
+  }
+
+  // Calcula, desde MI punto de vista, qué cromos recibo (+1) y cuáles entrego (−1).
+  function applyTradeToInventory(t) {
+    const me = window.Cloud.myId ? window.Cloud.myId() : null;
+    if (!me) return false;
+    let received = [], given = [];
+    const offer = t.offer || [];
+    if (t.mode === "venta") {
+      if (t.from_user === me) received = [t.code];      // compré: recibo el cromo
+      else if (t.to_user === me) given = [t.code];       // vendí: lo entrego
+    } else { // cambio
+      if (t.from_user === me) { received = [t.code]; given = offer.slice(); }   // propuse: recibo el cromo y doy mi oferta
+      else if (t.to_user === me) { received = offer.slice(); given = [t.code]; } // dueño: recibo la oferta y doy mi cromo
+    }
+    received.forEach(function (c) { if (codeIndex[c]) Store.increment(c); });   // lo recibo (sale de Faltan / suma)
+    given.forEach(function (c) { if (codeIndex[c]) Store.decrement(c); });      // lo entrego (−1 de mis repes)
+    return true;
+  }
+
+  // Aplica todas las completadas que aún no se hayan aplicado en este dispositivo.
+  function applyCompletedTrades(rows) {
+    let n = 0;
+    (rows || []).forEach(function (t) {
+      if (t.status === "completada" && getApplied().indexOf(t.id) === -1) {
+        applyTradeToInventory(t); markApplied(t.id); n += 1;
+      }
+    });
+    return n;
+  }
+
   function renderTrades() {
     closeChat(); // limpia cualquier chat en línea abierto antes de re-dibujar
     const host = el("#content");
@@ -633,14 +680,19 @@
     }
     host.innerHTML = '<div class="empty">Cargando tratos… ⏳</div>';
     window.Cloud.fetchTrades().then(function (rows) {
+      rows = rows || [];
+      tradeRows = rows;
+      // Si alguna parte ya completó un cambio, actualizamos el álbum (una sola vez).
+      const applied = applyCompletedTrades(rows);
       try {
-        host.innerHTML = tradesHTML(rows || []);
+        host.innerHTML = tradesHTML(rows);
       } catch (err) {
         host.innerHTML = '<div class="empty">⚠️ Error al dibujar los tratos:<br><br><small>' +
           escapeHTML(String((err && err.message) || err)) + '</small></div>';
         console.error("tradesHTML", err);
       }
       refreshTradesBadge();
+      if (applied > 0) showToast("✅ Álbum actualizado por un cambio completado");
     }).catch(function (e) {
       host.innerHTML = '<div class="empty">No se pudieron cargar los tratos.<br><br><small>' +
         escapeHTML(String((e && e.message) || e)) + '</small><br><br>¿Creaste la tabla "trades" en Supabase?</div>';
@@ -712,6 +764,34 @@
     const map = { aceptar: "aceptada", rechazar: "rechazada", completar: "completada", cancelar: "cancelada" };
     const status = map[action];
     if (!status || !window.Cloud || !window.Cloud.setTradeStatus) return;
+
+    // Al COMPLETAR: confirmamos y actualizamos el álbum (recibes / entregas).
+    if (action === "completar") {
+      const t = tradeRows.find(function (x) { return x.id === id; });
+      const me = window.Cloud.myId ? window.Cloud.myId() : null;
+      let resumen = "";
+      if (t) {
+        const offer = t.offer || [];
+        let received = [], given = [];
+        if (t.mode === "venta") {
+          if (t.from_user === me) received = [t.code]; else given = [t.code];
+        } else {
+          if (t.from_user === me) { received = [t.code]; given = offer.slice(); }
+          else { received = offer.slice(); given = [t.code]; }
+        }
+        const lbl = function (c) { const s = codeIndex[c]; return s ? s.codeLabel : c; };
+        if (received.length) resumen += "\n✅ Recibes: " + received.map(lbl).join(", ");
+        if (given.length) resumen += "\n📤 Entregas: " + given.map(lbl).join(", ");
+      }
+      if (!window.confirm("¿Confirmas que ya hicisteis el intercambio?" + resumen +
+        "\n\nSe actualizará tu álbum automáticamente.")) return;
+      window.Cloud.setTradeStatus(id, status).then(function () {
+        if (t && getApplied().indexOf(id) === -1) { applyTradeToInventory(t); markApplied(id); }
+        renderTrades();
+      }).catch(function () { window.alert("No se pudo actualizar el trato."); });
+      return;
+    }
+
     window.Cloud.setTradeStatus(id, status).then(function () { renderTrades(); })
       .catch(function () { window.alert("No se pudo actualizar el trato."); });
   }
