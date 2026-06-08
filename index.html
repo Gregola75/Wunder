@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -93,6 +93,7 @@
         <span>Tu contacto (para cambios/ventas)</span>
         <input type="text" id="contact-input" placeholder="WhatsApp, @usuario o email" autocomplete="off" />
       </label>
+      <button id="btn-share">📣 Invitar amigos</button>
       <button id="btn-export">⬇️ Exportar respaldo</button>
       <button id="btn-import">⬆️ Importar respaldo</button>
       <button id="btn-reset" class="danger">🗑️ Reiniciar todo</button>
@@ -112,16 +113,16 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=27"></script>
-  <script src="js/collections.js?v=27"></script>
-  <script src="js/worldcups.js?v=27"></script>
-  <script src="js/adrenalyn.js?v=27"></script>
-  <script src="js/players.js?v=27"></script>
-  <script src="js/wcplayers.js?v=27"></script>
-  <script src="js/data.js?v=27"></script>
-  <script src="js/storage.js?v=27"></script>
-  <script src="js/cloud.js?v=27"></script>
-  <script src="js/app.js?v=27"></script>
+  <script src="js/config.js?v=28"></script>
+  <script src="js/collections.js?v=28"></script>
+  <script src="js/worldcups.js?v=28"></script>
+  <script src="js/adrenalyn.js?v=28"></script>
+  <script src="js/players.js?v=28"></script>
+  <script src="js/wcplayers.js?v=28"></script>
+  <script src="js/data.js?v=28"></script>
+  <script src="js/storage.js?v=28"></script>
+  <script src="js/cloud.js?v=28"></script>
+  <script src="js/app.js?v=28"></script>
   <script>
     // Menú de opciones como hoja inferior con fondo oscuro
     (function () {
@@ -136,7 +137,17 @@
       backdrop.addEventListener("click", function () { hide(); });
       pop.addEventListener("click", function (e) { e.stopPropagation(); });
       // cerrar la hoja también tras elegir exportar/importar/reiniciar
-      ["btn-export", "btn-import", "btn-reset"].forEach(function (id) {
+      // Invitar amigos: compartir nativo o WhatsApp
+      document.getElementById("btn-share").addEventListener("click", function () {
+        var url = "https://swalbum.com";
+        var text = "Colecciona e intercambia cromos con Swalbum ⚽📲";
+        if (navigator.share) {
+          navigator.share({ title: "Swalbum", text: text, url: url }).catch(function () {});
+        } else {
+          window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank");
+        }
+      });
+      ["btn-share", "btn-export", "btn-import", "btn-reset"].forEach(function (id) {
         document.getElementById(id).addEventListener("click", function () { setTimeout(hide, 50); });
       });
     })();
