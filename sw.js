@@ -1,23 +1,41 @@
 /*
- * sw.js — AUTODESTRUCTIVO.
- * Estábamos teniendo problemas de caché "pegada". Este service worker se
- * desregistra a sí mismo, borra todas las cachés y recarga las pestañas para
- * que SIEMPRE se cargue la versión más nueva desde la red. Sin caché.
+ * sw.js — Service Worker de Swalbum (instalable + SIEMPRE fresco).
+ *
+ * - Navegaciones (HTML): siempre a la red sin caché (no-store) → nunca código viejo.
+ * - Resto (js/css/imágenes con ?v=): network-first; si no hay internet, sirve la
+ *   última copia cacheada (modo offline). Los recursos de terceros no se tocan.
+ * - Al activarse una versión nueva, borra cachés antiguas.
  */
-self.addEventListener("install", function () { self.skipWaiting(); });
+var CACHE = "swalbum-v44";
+var SHELL = ["./", "./index.html", "./manifest.json",
+  "./assets/logo/swalbum-mark.png", "./assets/logo/swalbum-lockup.png"];
 
-self.addEventListener("activate", function (e) {
-  e.waitUntil((async function () {
-    try { await self.registration.unregister(); } catch (err) {}
-    try {
-      var keys = await caches.keys();
-      await Promise.all(keys.map(function (k) { return caches.delete(k); }));
-    } catch (err) {}
-    try {
-      var cs = await self.clients.matchAll({ type: "window" });
-      cs.forEach(function (c) { try { c.navigate(c.url); } catch (e2) {} });
-    } catch (err) {}
-  })());
+self.addEventListener("install", function (e) {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL).catch(function () {}); }));
 });
 
-self.addEventListener("fetch", function () { /* passthrough: siempre red */ });
+self.addEventListener("activate", function (e) {
+  e.waitUntil(
+    caches.keys().then(function (keys) {
+      return Promise.all(keys.map(function (k) { return k === CACHE ? null : caches.delete(k); }));
+    }).then(function () { return self.clients.claim(); })
+  );
+});
+
+self.addEventListener("fetch", function (e) {
+  var req = e.request;
+  if (req.method !== "GET") return;
+  var url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // terceros (Supabase/CDN/fuentes): no tocar
+  var isNav = req.mode === "navigate";
+  e.respondWith(
+    fetch(isNav ? new Request(req.url, { cache: "no-store" }) : req).then(function (res) {
+      var copy = res.clone();
+      caches.open(CACHE).then(function (c) { c.put(req, copy); });
+      return res;
+    }).catch(function () {
+      return caches.match(req).then(function (r) { return r || caches.match("./index.html"); });
+    })
+  );
+});
