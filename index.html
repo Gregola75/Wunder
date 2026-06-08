@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=29" />
+  <link rel="stylesheet" href="styles.css?v=30" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
 </head>
 <body>
@@ -98,9 +98,12 @@
       <button id="btn-import">⬆️ Importar respaldo</button>
       <button id="btn-reset" class="danger">🗑️ Reiniciar todo</button>
       <button id="btn-close-menu" class="sheet-close">Cerrar</button>
-      <input type="file" id="import-file" accept="application/json" hidden />
     </div>
   </div>
+
+  <!-- Campo de archivo para importar respaldo (fuera del menú para que no se
+       cierre con la hoja; sin filtro para que el móvil muestre el .json). -->
+  <input type="file" id="import-file" accept=".json,application/json,text/plain" hidden />
 
   <!-- Pantalla de Colecciones (familias → ediciones) -->
   <div class="collections" id="collections" hidden>
@@ -113,16 +116,16 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=29"></script>
-  <script src="js/collections.js?v=29"></script>
-  <script src="js/worldcups.js?v=29"></script>
-  <script src="js/adrenalyn.js?v=29"></script>
-  <script src="js/players.js?v=29"></script>
-  <script src="js/wcplayers.js?v=29"></script>
-  <script src="js/data.js?v=29"></script>
-  <script src="js/storage.js?v=29"></script>
-  <script src="js/cloud.js?v=29"></script>
-  <script src="js/app.js?v=29"></script>
+  <script src="js/config.js?v=30"></script>
+  <script src="js/collections.js?v=30"></script>
+  <script src="js/worldcups.js?v=30"></script>
+  <script src="js/adrenalyn.js?v=30"></script>
+  <script src="js/players.js?v=30"></script>
+  <script src="js/wcplayers.js?v=30"></script>
+  <script src="js/data.js?v=30"></script>
+  <script src="js/storage.js?v=30"></script>
+  <script src="js/cloud.js?v=30"></script>
+  <script src="js/app.js?v=30"></script>
   <script>
     // Menú de opciones como hoja inferior con fondo oscuro
     (function () {

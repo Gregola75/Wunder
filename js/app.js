@@ -627,11 +627,12 @@
   }
 
   function exportData() {
+    const active = (window.COLLECTIONS && window.COLLECTIONS.active) || "album";
     const blob = new Blob([Store.exportData()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "mi-album-mundial-2026.json";
+    a.download = "swalbum-respaldo-" + active + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -644,12 +645,22 @@
     const reader = new FileReader();
     reader.onload = function () {
       try {
+        const data = JSON.parse(reader.result);
+        if (!data || typeof data !== "object" || (!data.counts && !data.names && !data.listings && !data.settings)) {
+          throw new Error("formato no reconocido");
+        }
         Store.importData(reader.result);
+        // Refresca el contacto y la pantalla.
+        const contact = el("#contact-input");
+        if (contact) contact.value = Store.getSetting("contact", "");
         render();
-        window.alert("Progreso importado correctamente. ✔");
+        window.alert("Respaldo importado correctamente. ✔");
       } catch (err) {
-        window.alert("No se pudo leer el archivo. Asegúrate de que sea un respaldo válido.");
+        window.alert("No se pudo leer el archivo. Asegúrate de elegir un respaldo de Swalbum (.json).");
       }
+    };
+    reader.onerror = function () {
+      window.alert("No se pudo abrir el archivo. Inténtalo de nuevo.");
     };
     reader.readAsText(file);
     e.target.value = "";
