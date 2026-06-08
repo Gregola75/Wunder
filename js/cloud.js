@@ -353,6 +353,12 @@
       } catch (e) { return null; }
     },
     unsubscribe: function (ch) { if (ch && sb.removeChannel) try { sb.removeChannel(ch); } catch (e) {} },
+    unreadCount: function (since) {
+      if (!session) return Promise.resolve(0);
+      return sb.from("messages").select("id", { count: "exact", head: true })
+        .eq("to_user", session.user.id).gt("created_at", since || "1970-01-01")
+        .then(function (res) { return res.count || 0; }).catch(function () { return 0; });
+    },
   };
 
   // ---------- eventos (delegación, una sola vez) ----------

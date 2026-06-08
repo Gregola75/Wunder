@@ -536,7 +536,8 @@
       const L = tradeLabel(t);
       const otherName = role === "recibido" ? (t.from_name || "Alguien") : (t.to_name || "Coleccionista");
       const otherId = (t.from_user === me) ? t.to_user : t.from_user;
-      const chatBtn = '<button class="tr-btn chat" data-chat="' + t.id + '" data-other="' + escapeHTML(otherId || "") + '" data-othername="' + escapeHTML(otherName) + '">💬 Chat</button>';
+      const ctx = L.where + " · " + L.modo;
+      const chatBtn = '<button class="tr-btn chat" data-chat="' + t.id + '" data-other="' + escapeHTML(otherId || "") + '" data-othername="' + escapeHTML(otherName) + '" data-ctx="' + escapeHTML(ctx) + '" data-role="' + role + '" data-status="' + t.status + '">💬 Chat</button>';
       let actions = "", contacts = "";
       if (t.status === "pendiente" && role === "recibido") {
         actions = '<div class="tr-actions">' + chatBtn +
@@ -580,15 +581,49 @@
 
   // ---------- Chat de negociación ----------
   let chatState = null;
-  function openChat(tradeId, otherId, otherName) {
+
+  // Marca de "mensajes vistos" (por usuario) para el contador de no leídos.
+  function chatSeenKey() {
+    const id = window.Cloud && window.Cloud.myId ? window.Cloud.myId() : null;
+    return id ? ("swalbum.chatseen." + id) : null;
+  }
+  function markChatSeen() {
+    const k = chatSeenKey();
+    if (k) { try { localStorage.setItem(k, new Date().toISOString()); } catch (e) {} }
+  }
+  function getChatSeen() {
+    const k = chatSeenKey();
+    try { return (k && localStorage.getItem(k)) || "1970-01-01"; } catch (e) { return "1970-01-01"; }
+  }
+
+  function chatActionsHTML(role, status) {
+    if (status === "pendiente" && role === "recibido") {
+      return '<button class="tr-btn ok" data-cact="aceptar">✅ Cerrar trato (apartar)</button>' +
+             '<button class="tr-btn no" data-cact="rechazar">✕ Rechazar</button>';
+    }
+    if (status === "pendiente" && role === "enviado") {
+      return '<div class="chat-note">Esperando que el dueño cierre el trato contigo.</div>' +
+             '<button class="tr-btn" data-cact="cancelar">Cancelar propuesta</button>';
+    }
+    if (status === "aceptada") {
+      return '<div class="chat-note">✅ Trato apartado. Coordinad la entrega por aquí y marcad completado.</div>' +
+             '<button class="tr-btn ok" data-cact="completar">Marcar completado</button>';
+    }
+    return "";
+  }
+
+  function openChat(tradeId, otherId, otherName, ctx, role, status) {
     if (!window.Cloud || !window.Cloud.fetchMessages || !window.Cloud.isOnline()) {
       window.alert("Inicia sesión para chatear."); return;
     }
     chatState = { tradeId: tradeId, otherId: otherId, msgs: [], channel: null, poll: null };
-    el("#chat-title").textContent = "💬 " + (otherName || "Chat");
+    el("#chat-title").textContent = "💬 " + (otherName || "Trato");
+    const sub = el("#chat-sub"); if (sub) sub.textContent = ctx || "";
+    const acts = el("#chat-actions"); if (acts) acts.innerHTML = chatActionsHTML(role, status);
     el("#chat-msgs").innerHTML = '<div class="empty sm">Cargando…</div>';
     el("#chat-input").value = "";
     el("#chat").hidden = false;
+    markChatSeen();
 
     function merge(arr) {
       arr.forEach(function (m) { if (!chatState.msgs.some(function (x) { return x.id === m.id; })) chatState.msgs.push(m); });
@@ -624,6 +659,8 @@
     }
     chatState = null;
     el("#chat").hidden = true;
+    markChatSeen();
+    refreshTradesBadge();
   }
   function sendChat() {
     if (!chatState) return;
@@ -638,7 +675,11 @@
 
   function refreshTradesBadge() {
     if (!window.Cloud || !window.Cloud.pendingTradesCount) return;
-    window.Cloud.pendingTradesCount().then(function (n) {
+    Promise.all([
+      window.Cloud.pendingTradesCount(),
+      window.Cloud.unreadCount ? window.Cloud.unreadCount(getChatSeen()) : Promise.resolve(0),
+    ]).then(function (res) {
+      const n = (res[0] || 0) + (res[1] || 0);
       const b = el("#trades-badge");
       if (!b) return;
       if (n > 0) { b.textContent = n; b.hidden = false; } else { b.hidden = true; }
@@ -744,7 +785,12 @@
 
       // Chat de un trato
       const chatBtn = e.target.closest("[data-chat]");
-      if (chatBtn) { openChat(chatBtn.getAttribute("data-chat"), chatBtn.getAttribute("data-other"), chatBtn.getAttribute("data-othername")); return; }
+      if (chatBtn) {
+        openChat(chatBtn.getAttribute("data-chat"), chatBtn.getAttribute("data-other"),
+          chatBtn.getAttribute("data-othername"), chatBtn.getAttribute("data-ctx"),
+          chatBtn.getAttribute("data-role"), chatBtn.getAttribute("data-status"));
+        return;
+      }
 
       // Acciones de Tratos (aceptar / rechazar / completar / cancelar)
       const trBtn = e.target.closest("[data-trade]");
@@ -869,6 +915,19 @@
     if (chatForm) chatForm.addEventListener("submit", function (e) { e.preventDefault(); sendChat(); });
     const chatCloseBtn = el("#chat-close");
     if (chatCloseBtn) chatCloseBtn.addEventListener("click", closeChat);
+    const chatActs = el("#chat-actions");
+    if (chatActs) chatActs.addEventListener("click", function (e) {
+      const b = e.target.closest("[data-cact]");
+      if (!b || !chatState) return;
+      const tid = chatState.tradeId;
+      handleTradeAction(tid, b.getAttribute("data-cact"));
+      closeChat();
+      currentTab = "trades";
+      render();
+    });
+
+    // Aviso de propuestas/mensajes nuevos cada 30s mientras la app está abierta.
+    setInterval(function () { if (window.Cloud && window.Cloud.isOnline && window.Cloud.isOnline()) refreshTradesBadge(); }, 30000);
 
     // Cambiar contraseña / exportar PDF
     const bcp = el("#btn-change-pass");
