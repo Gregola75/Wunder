@@ -345,9 +345,13 @@
     createTrade: function (t) {
       if (!session) return Promise.reject(new Error("Sin sesión"));
       var contact = (window.Store && window.Store.getSetting) ? (window.Store.getSetting("contact", "") || null) : null;
+      // "want" = lista de cromos que pides (uno o varios). "code" = el primero,
+      // para compatibilidad con la vista antigua.
+      var wantArr = (t.want && t.want.length) ? t.want : (t.code ? [t.code] : []);
       var row = {
         from_user: session.user.id, to_user: t.toUser,
-        collection: ACTIVE, code: t.code, mode: t.mode || "cambio",
+        collection: ACTIVE, code: wantArr[0] || t.code || null, mode: t.mode || "cambio",
+        want: (wantArr.length ? wantArr : null),
         price: (t.price == null ? null : t.price), cond: (t.cond == null ? 1 : t.cond),
         offer: (t.offer && t.offer.length ? t.offer : null),
         from_name: displayName(), from_contact: contact,

@@ -35,6 +35,10 @@
   let mktMode = "all";        // all | cambio | venta
   let marketRows = null;      // caché de ofertas (para no recargar al filtrar)
   let marketFriends = null;   // caché de amigos (para filtrar y mostrar estado)
+  // Cesta de cambio por usuario: { userId: Set(codes que le quiero pedir) }.
+  // Permite pedir VARIOS cromos a la misma persona en UNA sola solicitud.
+  const tradeBasket = {};
+  function basketFor(uid) { if (!tradeBasket[uid]) tradeBasket[uid] = new Set(); return tradeBasket[uid]; }
 
   // Doble toque para marcar por primera vez (evita marcar cromos sin querer).
   let armedId = null;     // cromo "preparado" esperando el segundo toque
@@ -407,14 +411,18 @@
       ? ("💲" + (o.price != null ? o.price : ""))
       : ("🔁" + (o.cond > 1 ? "x" + o.cond : ""));
     const own = owner || {};
+    // En CAMBIO, tocar el cromo lo añade a la cesta (pedir varios a la vez).
+    const selected = o.mode === "cambio" && basketFor(own.user_id || "").has(o.code);
+    const title = o.mode === "venta" ? "Tocar para comprar" : "Tocar para añadir a tu solicitud";
     return (
-      '<div class="mc mc-offer' + (o.missing ? " need" : "") + '" title="Tocar para proponer · ' + escapeHTML(nameOf(s)) + '"' +
+      '<div class="mc mc-offer' + (o.missing ? " need" : "") + (selected ? " picked" : "") + '" title="' + title + ' · ' + escapeHTML(nameOf(s)) + '"' +
         ' data-code="' + escapeHTML(o.code) + '" data-mode="' + escapeHTML(o.mode) + '"' +
         ' data-price="' + (o.price != null ? escapeHTML(String(o.price)) : "") + '"' +
         ' data-cond="' + (o.cond || 1) + '"' +
         ' data-oid="' + escapeHTML(own.user_id || "") + '"' +
         ' data-oname="' + escapeHTML(own.display_name || "Coleccionista") + '"' +
         ' data-ocontact="' + escapeHTML(own.contact || "") + '">' +
+        (selected ? '<span class="mc-pick">✓</span>' : "") +
         (o.missing ? '<span class="mc-need">te falta</span>' : "") +
         (o.photo ? '<button class="mc-photo" data-photo="' + escapeHTML(o.photo) + '" title="Ver foto del estado">📷</button>' : "") +
         '<div class="mc-flag">' + flagFor(s) + '</div>' +
@@ -482,6 +490,7 @@
       (totalNeed
         ? '🎯 <b>' + totalNeed + '</b> cromos que te faltan están disponibles, en <b>' + users.length + '</b> coleccionista(s)'
         : 'Hay <b>' + users.length + '</b> coleccionista(s) con ofertas') +
+      '<div class="mkt-hint">Toca los cromos de 🔁 cambio que quieras de una persona y pulsa <b>🤝 Proponer cambio</b> para pedirlos todos en una sola solicitud.</div>' +
       '</div>';
     users.forEach(function (u) {
       const row = u.row;
@@ -489,8 +498,16 @@
       if (fr.friendIds.has(row.user_id)) friendBit = '<span class="friend-chip ok">👥 Amigo</span>';
       else if (fr.relatedIds.has(row.user_id)) friendBit = '<span class="friend-chip pend">⏳ Pendiente</span>';
       else friendBit = '<button class="friend-add" data-addfriend="' + escapeHTML(row.user_id || "") + '" data-name="' + escapeHTML(row.display_name || "") + '">👥 Añadir amigo</button>';
+      const nSel = basketFor(row.user_id).size;
+      const hasCambio = u.items.some(function (it) { return it.mode === "cambio"; });
+      const proposeBtn = hasCambio
+        ? '<button class="ucard-propose" data-propose="' + escapeHTML(row.user_id || "") +
+            '" data-oname="' + escapeHTML(row.display_name || "Coleccionista") +
+            '" data-ocontact="' + escapeHTML(row.contact || "") + '"' + (nSel ? "" : " hidden") + '>' +
+            '🤝 Proponer cambio (<span class="prop-n">' + nSel + '</span>)</button>'
+        : "";
       html +=
-        '<div class="ucard">' +
+        '<div class="ucard" data-ucard="' + escapeHTML(row.user_id || "") + '">' +
           '<div class="ucard-head">' +
             '<div class="ucard-id">👤 ' + escapeHTML(row.display_name || "Coleccionista") +
               (u.needCount ? ' <span class="ucard-need">🎯 ' + u.needCount + ' te faltan</span>' : "") + '</div>' +
@@ -498,6 +515,7 @@
           '</div>' +
           '<div class="ucard-sub">' + friendBit + '</div>' +
           '<div class="mc-grid">' + u.items.map(function (it) { return miniCromo(it, row); }).join("") + '</div>' +
+          proposeBtn +
         '</div>';
     });
     return html;
@@ -536,16 +554,54 @@
     });
   }
 
-  // Selector: para un CAMBIO, eliges de tus repes los cromos que le faltan a la
-  // otra persona (le ofreces lo que necesita). Hasta "cond" cromos.
+  // ---- Cesta de cambio (pedir varios cromos a la misma persona) ----
+  function toggleBasket(el) {
+    const code = el.getAttribute("data-code");
+    const oid = el.getAttribute("data-oid");
+    if (!code || !oid) return;
+    const set = basketFor(oid);
+    if (set.has(code)) {
+      set.delete(code);
+      el.classList.remove("picked");
+      const mk = el.querySelector(".mc-pick"); if (mk) mk.remove();
+    } else {
+      set.add(code);
+      el.classList.add("picked");
+      if (!el.querySelector(".mc-pick")) {
+        const mk = document.createElement("span"); mk.className = "mc-pick"; mk.textContent = "✓";
+        el.insertBefore(mk, el.firstChild);
+      }
+    }
+    updateProposeBtn(oid);
+  }
+  function updateProposeBtn(oid) {
+    const card = document.querySelector('[data-ucard="' + oid + '"]');
+    if (!card) return;
+    const btn = card.querySelector("[data-propose]");
+    if (!btn) return;
+    const n = basketFor(oid).size;
+    const span = btn.querySelector(".prop-n");
+    if (span) span.textContent = n;
+    btn.hidden = n === 0;
+  }
+  function openTradeBasket(btn) {
+    const oid = btn.getAttribute("data-propose");
+    const wants = Array.from(basketFor(oid));
+    if (!wants.length) { window.alert("Toca primero los cromos que quieres pedir."); return; }
+    openTradePicker({
+      wants: wants, oid: oid,
+      oname: btn.getAttribute("data-oname") || "Coleccionista",
+      ocontact: btn.getAttribute("data-ocontact") || "",
+    });
+  }
+
+  // Selector: pides VARIOS cromos a una persona y eliges de tus repes lo que le
+  // ofreces a cambio (sus cromos que le faltan y tú tienes repetidos).
   function openTradePicker(t) {
+    const wants = (t.wants && t.wants.length) ? t.wants : (t.code ? [t.code] : []);
     const row = (marketRows || []).find(function (r) { return r.user_id === t.oid; });
-    const wants = (window.Cloud.wantsFor ? window.Cloud.wantsFor(row) : []) || [];
-    // Cromos que le faltan a ÉL y de los que YO tengo repetidos (≥2).
-    const offerable = wants.filter(function (c) { return Store.getCount(c) >= 2 && codeIndex[c]; });
-    const want = codeIndex[t.code];
-    const wantLabel = want ? (flagFor(want) + " " + want.codeLabel + " · " + nameOf(want)) : t.code;
-    const N = t.cond || 1;
+    const theirWants = (window.Cloud.wantsFor ? window.Cloud.wantsFor(row) : []) || [];
+    const offerable = theirWants.filter(function (c) { return Store.getCount(c) >= 2 && codeIndex[c]; });
     const sel = new Set();
 
     let box = document.getElementById("trade-picker");
@@ -559,8 +615,7 @@
         const pc = e.target.closest("[data-pick]");
         if (pc) {
           const c = pc.getAttribute("data-pick");
-          if (ctx.sel.has(c)) ctx.sel.delete(c);
-          else if (ctx.sel.size < ctx.N) ctx.sel.add(c);
+          if (ctx.sel.has(c)) ctx.sel.delete(c); else ctx.sel.add(c);
           ctx.draw();
           return;
         }
@@ -568,15 +623,19 @@
           const offer = Array.from(ctx.sel);
           if (ctx.offerable.length && offer.length === 0) { window.alert("Elige al menos un cromo que le ofreces."); return; }
           box.hidden = true;
-          sendTrade({ toUser: ctx.t.oid, toName: ctx.t.oname, toContact: ctx.t.ocontact, code: ctx.t.code, mode: "cambio", price: null, cond: ctx.N, offer: offer });
+          const oid = ctx.t.oid;
+          sendTrade({ toUser: oid, toName: ctx.t.oname, toContact: ctx.t.ocontact, want: ctx.wants, mode: "cambio", price: null, cond: 1, offer: offer });
+          basketFor(oid).clear();
+          if (currentTab === "market") renderMarket();
           return;
         }
       });
     }
 
-    function itemsHTML() {
+    function chip(c) { const s = codeIndex[c]; return '<span class="off-chip">' + (s ? (flagFor(s) + " " + s.codeLabel) : escapeHTML(c)) + '</span>'; }
+    function offerHTML() {
       if (!offerable.length) {
-        return '<div class="empty">Ahora mismo no tienes repes que le falten a <b>' + escapeHTML(t.oname) + '</b>.<br><br>' +
+        return '<div class="empty sm">Ahora mismo no tienes repes que le falten a <b>' + escapeHTML(t.oname) + '</b>. ' +
           'Puedes proponer igualmente y poneros de acuerdo por el chat. 💬</div>';
       }
       return '<div class="pick-grid">' + offerable.map(function (c) {
@@ -593,18 +652,18 @@
       box.innerHTML =
         '<div class="picker-card">' +
           '<div class="picker-head"><h2>Propón tu cambio</h2><button class="coll-x" data-pickclose aria-label="Cerrar">✕</button></div>' +
-          '<div class="picker-info">Quieres <b>' + escapeHTML(wantLabel) + '</b> de <b>' + escapeHTML(t.oname) + '</b>.<br>' +
-            (N > 1 ? ('Te pide <b>' + N + '</b> cromos que le faltan. ') : 'Elige <b>1</b> cromo que le falte. ') +
-            'Marca los que le ofreces a cambio:</div>' +
-          itemsHTML() +
+          '<div class="picker-info">A <b>' + escapeHTML(t.oname) + '</b> le pides <b>' + wants.length + '</b> cromo(s):</div>' +
+          '<div class="pick-wants">' + wants.map(chip).join(" ") + '</div>' +
+          '<div class="picker-info">Marca los que le ofreces a cambio (de tus repes que le faltan):</div>' +
+          offerHTML() +
           '<div class="picker-foot">' +
-            '<span class="pick-count">' + sel.size + ' / ' + N + ' elegidos</span>' +
-            '<button class="picker-send" data-picksend' + (offerable.length && sel.size === 0 ? " disabled" : "") + '>Enviar propuesta</button>' +
+            '<span class="pick-count">Ofreces ' + sel.size + '</span>' +
+            '<button class="picker-send" data-picksend' + (offerable.length && sel.size === 0 ? " disabled" : "") + '>Enviar solicitud</button>' +
           '</div>' +
         '</div>';
     }
 
-    box._ctx = { t: t, sel: sel, N: N, offerable: offerable, draw: draw };
+    box._ctx = { t: t, wants: wants, sel: sel, offerable: offerable, draw: draw };
     draw();
     box.hidden = false;
   }
@@ -643,18 +702,22 @@
     if (a.indexOf(id) === -1) { a.push(id); try { localStorage.setItem(k, JSON.stringify(a)); } catch (e) {} }
   }
 
+  // Lista de cromos que se piden en un trato (uno o varios).
+  function wantCodesOf(t) { return (t.want && t.want.length) ? t.want : (t.code ? [t.code] : []); }
+
   // Calcula, desde MI punto de vista, qué cromos recibo (+1) y cuáles entrego (−1).
   function applyTradeToInventory(t) {
     const me = window.Cloud.myId ? window.Cloud.myId() : null;
     if (!me) return false;
-    let received = [], given = [];
+    const wants = wantCodesOf(t);
     const offer = t.offer || [];
+    let received = [], given = [];
     if (t.mode === "venta") {
-      if (t.from_user === me) received = [t.code];      // compré: recibo el cromo
-      else if (t.to_user === me) given = [t.code];       // vendí: lo entrego
+      if (t.from_user === me) received = wants.slice();      // compré: recibo el/los cromo(s)
+      else if (t.to_user === me) given = wants.slice();       // vendí: los entrego
     } else { // cambio
-      if (t.from_user === me) { received = [t.code]; given = offer.slice(); }   // propuse: recibo el cromo y doy mi oferta
-      else if (t.to_user === me) { received = offer.slice(); given = [t.code]; } // dueño: recibo la oferta y doy mi cromo
+      if (t.from_user === me) { received = wants.slice(); given = offer.slice(); }   // propuse: recibo lo pedido y doy mi oferta
+      else if (t.to_user === me) { received = offer.slice(); given = wants.slice(); } // dueño: recibo la oferta y doy lo pedido
     }
     received.forEach(function (c) { if (codeIndex[c]) Store.increment(c); });   // lo recibo (sale de Faltan / suma)
     given.forEach(function (c) { if (codeIndex[c]) Store.decrement(c); });      // lo entrego (−1 de mis repes)
@@ -733,21 +796,30 @@
         actions = '<div class="tr-actions">' + chatBtn + '</div>';
       }
       const statusChip = '<span class="tr-status st-' + t.status + '">' + t.status + '</span>';
-      // Cromos que se ofrecen a cambio (los que le faltan al dueño del cromo).
+      function chipsOf(codes, cls) {
+        return (codes || []).map(function (c) {
+          const s = codeIndex[c];
+          return '<span class="off-chip' + (cls ? " " + cls : "") + '">' + (s ? (flagFor(s) + " " + s.codeLabel) : escapeHTML(c)) + '</span>';
+        }).join(" ");
+      }
+      // Cromos pedidos (uno o varios) y cromos ofrecidos a cambio.
+      const wants = wantCodesOf(t);
+      let wantBlock = "";
+      if (wants.length > 1) {
+        const wlbl = role === "recibido" ? "Te pide" : "Pides";
+        wantBlock = '<div class="tr-offer">🎯 ' + wlbl + ' (' + wants.length + '): ' + chipsOf(wants, "want") + '</div>';
+      }
       let offer = "";
       if (t.offer && t.offer.length) {
         const lbl = role === "recibido" ? "Te ofrece a cambio" : "Le ofreces";
-        const chips = t.offer.map(function (c) {
-          const s = codeIndex[c];
-          return '<span class="off-chip">' + (s ? (flagFor(s) + " " + s.codeLabel) : escapeHTML(c)) + '</span>';
-        }).join(" ");
-        offer = '<div class="tr-offer">🎁 ' + lbl + ': ' + chips + '</div>';
+        offer = '<div class="tr-offer">🎁 ' + lbl + ' (' + t.offer.length + '): ' + chipsOf(t.offer) + '</div>';
       }
+      const nameDisp = (wants.length > 1) ? (L.name + ' <span class="tr-more">+' + (wants.length - 1) + ' más</span>') : L.name;
       return '<div class="tr-card">' +
         '<div class="tr-top"><div class="tr-code">' + L.where + '</div>' +
-          '<div class="tr-info"><div class="tr-name">' + L.name + '</div>' +
+          '<div class="tr-info"><div class="tr-name">' + nameDisp + '</div>' +
             '<div class="tr-sub">' + (role === "recibido" ? ("De " + escapeHTML(otherName)) : ("Para " + escapeHTML(otherName))) + ' · ' + L.modo + '</div></div>' +
-          statusChip + '</div>' + offer + contacts + actions +
+          statusChip + '</div>' + wantBlock + offer + contacts + actions +
         '<div class="tr-chat" data-chatbox="' + t.id + '" hidden></div>' +
         '</div>';
     }
@@ -773,13 +845,14 @@
       const me = window.Cloud.myId ? window.Cloud.myId() : null;
       let resumen = "";
       if (t) {
+        const wants = wantCodesOf(t);
         const offer = t.offer || [];
         let received = [], given = [];
         if (t.mode === "venta") {
-          if (t.from_user === me) received = [t.code]; else given = [t.code];
+          if (t.from_user === me) received = wants.slice(); else given = wants.slice();
         } else {
-          if (t.from_user === me) { received = [t.code]; given = offer.slice(); }
-          else { received = offer.slice(); given = [t.code]; }
+          if (t.from_user === me) { received = wants.slice(); given = offer.slice(); }
+          else { received = offer.slice(); given = wants.slice(); }
         }
         const lbl = function (c) { const s = codeIndex[c]; return s ? s.codeLabel : c; };
         if (received.length) resumen += "\n✅ Recibes: " + received.map(lbl).join(", ");
@@ -1282,9 +1355,20 @@
       const addFr = e.target.closest("[data-addfriend]");
       if (addFr) { sendFriendRequestFromEl(addFr); return; }
 
-      // Proponer trato desde el Mercado (tocar un mini-cromo de otra persona)
+      // Enviar la solicitud de cambio con todo lo seleccionado de esa persona.
+      const propBtn = e.target.closest("[data-propose]");
+      if (propBtn) { openTradeBasket(propBtn); return; }
+
+      // Tocar un mini-cromo en el Mercado.
       const offerEl = e.target.closest(".mc-offer[data-code]");
-      if (offerEl && currentTab === "market") { proposeTradeFromEl(offerEl); return; }
+      if (offerEl && currentTab === "market") {
+        if (offerEl.getAttribute("data-mode") === "venta") {
+          proposeTradeFromEl(offerEl); // venta = comprar (directo)
+        } else {
+          toggleBasket(offerEl); // cambio = añadir/quitar de la solicitud
+        }
+        return;
+      }
 
       // Chat de un trato (se despliega dentro del propio trato)
       const chatBtn = e.target.closest("[data-chat]");
