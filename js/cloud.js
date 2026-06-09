@@ -412,11 +412,31 @@
     },
     sendFriendRequest: function (toUser, toName) {
       if (!session) return Promise.reject(new Error("Sin sesión"));
-      if (toUser === session.user.id) return Promise.reject(new Error("Eres tú"));
-      return sb.from("friends").insert({
-        requester: session.user.id, requester_name: displayName(),
-        addressee: toUser, addressee_name: toName || null, status: "pendiente",
-      }).then(function (res) { if (res.error) throw res.error; return true; });
+      var me = session.user.id;
+      if (toUser === me) return Promise.reject(new Error("Eres tú"));
+      // Antes de crear nada, miramos si YA hay una relación entre los dos
+      // (en cualquier dirección) para no duplicar solicitudes.
+      return sb.from("friends").select("*")
+        .or("and(requester.eq." + me + ",addressee.eq." + toUser + ")," +
+            "and(requester.eq." + toUser + ",addressee.eq." + me + ")")
+        .then(function (res) {
+          if (res.error) throw res.error;
+          var rows = res.data || [];
+          if (rows.length) {
+            var ex = rows[0];
+            if (ex.status === "aceptada") return "ya"; // ya sois amigos
+            // Si ME la enviaron a mí y sigue pendiente, la acepto: nos hacemos amigos.
+            if (ex.addressee === me && ex.status === "pendiente") {
+              return sb.from("friends").update({ status: "aceptada", updated_at: new Date().toISOString() }).eq("id", ex.id)
+                .then(function (r) { if (r.error) throw r.error; return "aceptada"; });
+            }
+            return "pendiente"; // ya la envié yo y sigue pendiente
+          }
+          return sb.from("friends").insert({
+            requester: me, requester_name: displayName(),
+            addressee: toUser, addressee_name: toName || null, status: "pendiente",
+          }).then(function (r) { if (r.error) throw r.error; return "enviada"; });
+        });
     },
     setFriendStatus: function (id, status) {
       if (!session) return Promise.reject(new Error("Sin sesión"));

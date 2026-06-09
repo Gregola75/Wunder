@@ -923,8 +923,14 @@
     if (!uid) return;
     if (!window.confirm("¿Enviar solicitud de amistad a " + name + "?")) return;
     btn.disabled = true; btn.textContent = "⏳ Enviando…";
-    window.Cloud.sendFriendRequest(uid, name).then(function () {
-      btn.outerHTML = '<span class="friend-chip pend">⏳ Pendiente</span>';
+    window.Cloud.sendFriendRequest(uid, name).then(function (result) {
+      // result: "enviada" | "pendiente" (ya existía) | "aceptada" (era mutua) | "ya" (ya amigos)
+      if (result === "aceptada" || result === "ya") {
+        btn.outerHTML = '<span class="friend-chip ok">👥 Amigo</span>';
+        if (result === "aceptada") window.alert("¡" + name + " ya te había enviado solicitud! Ahora sois amigos. 👥");
+      } else {
+        btn.outerHTML = '<span class="friend-chip pend">⏳ Pendiente</span>';
+      }
       // Refrescamos la caché de amigos para que se mantenga al re-filtrar.
       marketFriends = null;
       refreshFriendsBadge();
