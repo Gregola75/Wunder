@@ -837,3 +837,22 @@ body.locked .header-fab { display: none; }
 .off-chip.want { background: rgba(91, 140, 255, .14); border-color: rgba(91, 140, 255, .4); }
 .tr-more { font-size: 11px; color: var(--accent); font-weight: 700; }
 .mkt-hint { margin-top: 6px; font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.4; }
+
+/* ---------- Aviso de cambio descompensado + nota ---------- */
+.pick-warn {
+  background: rgba(240, 190, 90, .12); border: 1px solid rgba(240, 190, 90, .4); color: #e8b84a;
+  border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; margin: 12px 0 4px;
+}
+.pick-warn b { color: #f0c869; }
+.pick-note-lbl { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 0; }
+.pick-note {
+  width: 100%; margin-top: 6px; resize: vertical; min-height: 46px;
+  padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit;
+  background: #0d1117; border: 1px solid var(--line); color: var(--text);
+}
+.pick-count.warn { color: #e8b84a; }
+.pick-count.ok { color: #5fcf86; }
+.tr-note {
+  background: var(--card-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 10px; font-size: 13px; color: var(--text); margin: 2px 0 6px; line-height: 1.4;
+}

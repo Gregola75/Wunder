@@ -352,6 +352,7 @@
         from_user: session.user.id, to_user: t.toUser,
         collection: ACTIVE, code: wantArr[0] || t.code || null, mode: t.mode || "cambio",
         want: (wantArr.length ? wantArr : null),
+        note: (t.note ? String(t.note).slice(0, 300) : null),
         price: (t.price == null ? null : t.price), cond: (t.cond == null ? 1 : t.cond),
         offer: (t.offer && t.offer.length ? t.offer : null),
         from_name: displayName(), from_contact: contact,

@@ -624,11 +624,16 @@
           if (ctx.offerable.length && offer.length === 0) { window.alert("Elige al menos un cromo que le ofreces."); return; }
           box.hidden = true;
           const oid = ctx.t.oid;
-          sendTrade({ toUser: oid, toName: ctx.t.oname, toContact: ctx.t.ocontact, want: ctx.wants, mode: "cambio", price: null, cond: 1, offer: offer });
+          sendTrade({ toUser: oid, toName: ctx.t.oname, toContact: ctx.t.ocontact, want: ctx.wants, mode: "cambio", price: null, cond: 1, offer: offer, note: (ctx.note || "").trim() || null });
           basketFor(oid).clear();
           if (currentTab === "market") renderMarket();
           return;
         }
+      });
+      // Nota de texto (se conserva al re-dibujar el selector).
+      box.addEventListener("input", function (e) {
+        const ctx = box._ctx; if (!ctx) return;
+        if (e.target.classList.contains("pick-note")) ctx.note = e.target.value;
       });
     }
 
@@ -649,21 +654,32 @@
       }).join("") + '</div>';
     }
     function draw() {
+      const pides = wants.length, ofreces = sel.size;
+      const uneven = pides !== ofreces;
+      const note = (box._ctx && box._ctx.note) || "";
+      const balanceCls = uneven ? "warn" : "ok";
+      const warning = uneven
+        ? '<div class="pick-warn">⚠️ Cambio descompensado: <b>pides ' + pides + '</b> y <b>ofreces ' + ofreces + '</b>. ' +
+            'Explica abajo cómo lo compensáis (ej.: «te debo ' + Math.abs(pides - ofreces) + '» o «pídeme algo más»).</div>'
+        : "";
       box.innerHTML =
         '<div class="picker-card">' +
           '<div class="picker-head"><h2>Propón tu cambio</h2><button class="coll-x" data-pickclose aria-label="Cerrar">✕</button></div>' +
-          '<div class="picker-info">A <b>' + escapeHTML(t.oname) + '</b> le pides <b>' + wants.length + '</b> cromo(s):</div>' +
+          '<div class="picker-info">A <b>' + escapeHTML(t.oname) + '</b> le pides <b>' + pides + '</b> cromo(s):</div>' +
           '<div class="pick-wants">' + wants.map(chip).join(" ") + '</div>' +
           '<div class="picker-info">Marca los que le ofreces a cambio (de tus repes que le faltan):</div>' +
           offerHTML() +
+          warning +
+          '<label class="pick-note-lbl">📝 Nota para el otro coleccionista (opcional)' +
+            '<textarea class="pick-note" rows="2" maxlength="300" placeholder="Ej.: te pido 3 más y te debo uno, o lo cuadramos por el chat…">' + escapeHTML(note) + '</textarea></label>' +
           '<div class="picker-foot">' +
-            '<span class="pick-count">Ofreces ' + sel.size + '</span>' +
-            '<button class="picker-send" data-picksend' + (offerable.length && sel.size === 0 ? " disabled" : "") + '>Enviar solicitud</button>' +
+            '<span class="pick-count ' + balanceCls + '">Pides ' + pides + ' · Ofreces ' + ofreces + '</span>' +
+            '<button class="picker-send" data-picksend' + (offerable.length && ofreces === 0 ? " disabled" : "") + '>Enviar solicitud</button>' +
           '</div>' +
         '</div>';
     }
 
-    box._ctx = { t: t, wants: wants, sel: sel, offerable: offerable, draw: draw };
+    box._ctx = { t: t, wants: wants, sel: sel, offerable: offerable, note: "", draw: draw };
     draw();
     box.hidden = false;
   }
@@ -815,11 +831,12 @@
         offer = '<div class="tr-offer">🎁 ' + lbl + ' (' + t.offer.length + '): ' + chipsOf(t.offer) + '</div>';
       }
       const nameDisp = (wants.length > 1) ? (L.name + ' <span class="tr-more">+' + (wants.length - 1) + ' más</span>') : L.name;
+      const noteBlock = t.note ? '<div class="tr-note">📝 ' + escapeHTML(t.note) + '</div>' : "";
       return '<div class="tr-card">' +
         '<div class="tr-top"><div class="tr-code">' + L.where + '</div>' +
           '<div class="tr-info"><div class="tr-name">' + nameDisp + '</div>' +
             '<div class="tr-sub">' + (role === "recibido" ? ("De " + escapeHTML(otherName)) : ("Para " + escapeHTML(otherName))) + ' · ' + L.modo + '</div></div>' +
-          statusChip + '</div>' + wantBlock + offer + contacts + actions +
+          statusChip + '</div>' + wantBlock + offer + noteBlock + contacts + actions +
         '<div class="tr-chat" data-chatbox="' + t.id + '" hidden></div>' +
         '</div>';
     }
