@@ -726,7 +726,9 @@
         // Ambas partes ven los contactos para cerrar el trato.
         contacts = contactLine("Tú", role === "recibido" ? t.to_contact : t.from_contact) +
                    contactLine(escapeHTML(otherName), role === "recibido" ? t.from_contact : t.to_contact);
-        actions = '<div class="tr-actions">' + chatBtn + '<button class="tr-btn ok" data-trade="' + t.id + '" data-action="completar">Marcar completado</button></div>';
+        actions = '<div class="tr-actions">' + chatBtn +
+          '<button class="tr-btn ok" data-trade="' + t.id + '" data-action="completar">✓ Marcar completado</button>' +
+          '<button class="tr-btn no" data-trade="' + t.id + '" data-action="cancelar">✕ Cancelar trato</button></div>';
       } else if (t.status === "completada") {
         actions = '<div class="tr-actions">' + chatBtn + '</div>';
       }
@@ -789,6 +791,17 @@
         if (t && getApplied().indexOf(id) === -1) { applyTradeToInventory(t); markApplied(id); }
         renderTrades();
       }).catch(function () { window.alert("No se pudo actualizar el trato."); });
+      return;
+    }
+
+    // Al CANCELAR/RECHAZAR un trato (aún no completado): confirmamos. No toca el
+    // álbum porque aceptar no descuenta nada — todo sigue disponible como estaba.
+    if (action === "cancelar" || action === "rechazar") {
+      const verbo = action === "rechazar" ? "rechazar" : "cancelar";
+      if (!window.confirm("¿Seguro que quieres " + verbo + " este trato?\n\n" +
+        "No se descuenta nada: los cromos siguen disponibles para otros tratos.")) return;
+      window.Cloud.setTradeStatus(id, status).then(function () { renderTrades(); })
+        .catch(function () { window.alert("No se pudo actualizar el trato."); });
       return;
     }
 
