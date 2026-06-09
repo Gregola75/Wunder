@@ -192,6 +192,8 @@ body.locked .app-footer { display: none; }
 }
 .welcome-logo { width: min(78%, 280px); height: auto; margin: 2px auto 4px; display: block; }
 .welcome-card h1 { margin: 0; font-size: 26px; font-style: italic; letter-spacing: 1px; }
+.welcome-title { margin: 0 0 2px; font-family: "Oswald", sans-serif; font-size: 19px; font-weight: 700; line-height: 1.25; color: var(--text); }
+.welcome-title b { color: var(--accent); }
 .welcome-feats .fk { color: var(--accent); font-weight: 800; margin-right: 8px; }
 .welcome-tag { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .welcome-feats { list-style: none; padding: 0; margin: 2px 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }

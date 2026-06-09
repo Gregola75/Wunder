@@ -1,7 +1,7 @@
 {
   "name": "Swalbum",
   "short_name": "Swalbum",
-  "description": "Colecciona e intercambia cromos: qué tienes, qué te falta y tus repes para cambiar o vender.",
+  "description": "App para llevar el control de tus colecciones de cromos de fútbol: qué tienes, qué te falta y tus repetidas para intercambiar o vender.",
   "lang": "es",
   "start_url": ".",
   "scope": ".",
