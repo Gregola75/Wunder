@@ -33,7 +33,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=58" />
+  <link rel="stylesheet" href="styles.css?v=59" />
   <link rel="icon" href="assets/logo/swalbum-mark.png" />
   <script type="application/ld+json">
   {
@@ -175,6 +175,13 @@
       </div>
 
       <div class="set-sec">
+        <div class="set-sec-title">❓ Ayuda y contacto</div>
+        <button class="set-item" id="btn-help">📖 Cómo usar Swalbum</button>
+        <a class="set-item" id="btn-contact-email" href="mailto:hola@swalbum.com?subject=Swalbum%20-%20Contacto">✉️ Escríbenos (hola@swalbum.com)</a>
+        <button class="set-item" id="btn-feedback">📝 Enviar sugerencia o problema</button>
+      </div>
+
+      <div class="set-sec">
         <button class="set-item" id="btn-share">📣 Invitar amigos</button>
       </div>
 
@@ -184,7 +191,7 @@
         <button class="set-item danger" id="btn-reset">🗑️ Reiniciar este álbum</button>
       </div>
 
-      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v58</p>
+      <p class="set-soon" style="text-align:center; margin-top:6px;">Swalbum · versión v59</p>
 
     </div>
   </div>
@@ -213,17 +220,66 @@
     <div class="coll-body" id="friends-body"></div>
   </div>
 
+  <!-- Cómo usar la app (guía) -->
+  <div class="collections" id="help" hidden>
+    <div class="coll-head">
+      <h2>Cómo usar Swalbum</h2>
+      <button class="coll-x" id="help-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="coll-body help-body">
+      <p class="help-lead">Swalbum te ayuda a controlar tus <b>colecciones de cromos de fútbol</b> e intercambiarlas con otros. Así funciona:</p>
+
+      <div class="help-step"><div class="help-h">📔 Álbum</div>
+        <p>Toca un cromo para marcar que lo <b>tienes</b>. La primera vez pide un <b>doble toque</b> (para no marcar sin querer). Si vuelves a tocar uno que ya tienes, suma una <b>repetida</b>. El botón <b>−</b> resta. Usa la barra de banderas para saltar a cada selección.</p></div>
+
+      <div class="help-step"><div class="help-h">🔍 Faltan</div>
+        <p>Lista de todo lo que aún te falta, por equipos. Puedes <b>imprimirla en PDF</b> desde ⋯ Opciones → Tus listas.</p></div>
+
+      <div class="help-step"><div class="help-h">🔁 Repes</div>
+        <p>Tus cromos repetidos. Se ponen en <b>🔁 Cambio</b> automáticamente; pásalos a <b>💲 Venta</b> con precio si prefieres venderlos. Puedes adjuntar una <b>📷 foto</b> del estado real del cromo.</p></div>
+
+      <div class="help-step"><div class="help-h">🛒 Mercado</div>
+        <p>Ves las repes que ofrecen otros. Toca los cromos de <b>cambio</b> que quieras de una persona y pulsa <b>🤝 Proponer cambio</b> para pedirlos todos en una sola solicitud. Eliges qué le ofreces a cambio (de tus repes que a él le faltan). En 💲 venta, tocar = comprar.</p></div>
+
+      <div class="help-step"><div class="help-h">🤝 Tratos</div>
+        <p>Tus propuestas. El otro <b>acepta</b> o <b>rechaza</b>; al aceptar veis vuestros contactos y los cromos quedan <b>reservados</b>. Hay <b>chat</b> en cada trato. Cuando hagáis el intercambio, pulsa <b>Marcar completado</b> y tu álbum se actualiza solo (recibes / entregas).</p></div>
+
+      <div class="help-step"><div class="help-h">👥 Amigos y privacidad</div>
+        <p>Añade amigos desde el Mercado. En ⋯ Opciones eliges quién ve tus repes: <b>Todos</b>, <b>Solo amigos</b> o <b>Nadie</b>.</p></div>
+
+      <div class="help-step"><div class="help-h">☁️ Tu cuenta</div>
+        <p>Todo se guarda en la nube con tu cuenta: entra desde cualquier móvil y tendrás tus colecciones. Puedes <b>instalar la app</b> en tu pantalla de inicio desde ⋯ Opciones.</p></div>
+    </div>
+  </div>
+
+  <!-- Formulario de contacto / sugerencias -->
+  <div class="collections" id="feedback" hidden>
+    <div class="coll-head">
+      <h2>Contacto</h2>
+      <button class="coll-x" id="feedback-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="coll-body">
+      <p class="coll-intro">¿Una sugerencia, un fallo o una colección que quieres que añadamos? Cuéntanoslo y te leemos. También puedes escribirnos a <b>hola@swalbum.com</b>.</p>
+      <label class="set-field"><span>Tu email (para responderte, opcional)</span>
+        <input type="email" id="fb-email" placeholder="tucorreo@ejemplo.com" autocomplete="email" /></label>
+      <label class="set-field"><span>Tu mensaje</span>
+        <textarea id="fb-message" rows="5" maxlength="1000" placeholder="Escribe aquí…"></textarea></label>
+      <button class="set-item set-install" id="fb-send">Enviar mensaje</button>
+      <div class="acc-msg" id="fb-msg"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=58"></script>
-  <script src="js/collections.js?v=58"></script>
-  <script src="js/worldcups.js?v=58"></script>
-  <script src="js/adrenalyn.js?v=58"></script>
-  <script src="js/players.js?v=58"></script>
-  <script src="js/wcplayers.js?v=58"></script>
-  <script src="js/data.js?v=58"></script>
-  <script src="js/storage.js?v=58"></script>
-  <script src="js/cloud.js?v=58"></script>
-  <script src="js/app.js?v=58"></script>
+  <script src="js/config.js?v=59"></script>
+  <script src="js/collections.js?v=59"></script>
+  <script src="js/worldcups.js?v=59"></script>
+  <script src="js/adrenalyn.js?v=59"></script>
+  <script src="js/players.js?v=59"></script>
+  <script src="js/wcplayers.js?v=59"></script>
+  <script src="js/data.js?v=59"></script>
+  <script src="js/storage.js?v=59"></script>
+  <script src="js/cloud.js?v=59"></script>
+  <script src="js/app.js?v=59"></script>
   <script>
     // Configuración (pantalla completa) + invitar + instalar (PWA)
     (function () {

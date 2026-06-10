@@ -1196,6 +1196,26 @@
     else { b.textContent = "🔔 Activar avisos en este dispositivo"; b.disabled = false; }
   }
 
+  // ---------- Contacto / sugerencias ----------
+  function sendFeedback() {
+    const msgEl = el("#fb-message"), emEl = el("#fb-email"), out = el("#fb-msg");
+    const message = (msgEl && msgEl.value || "").trim();
+    const email = (emEl && emEl.value || "").trim();
+    function say(t, err) { if (out) { out.textContent = t; out.className = "acc-msg" + (err ? " err" : ""); } }
+    if (message.length < 4) { say("Escribe tu mensaje, por favor.", true); return; }
+    if (!window.Cloud || !window.Cloud.sendFeedback || !window.Cloud.isOnline()) { say("Inicia sesión para enviarnos el mensaje.", true); return; }
+    say("Enviando…");
+    window.Cloud.sendFeedback(email, message).then(function () {
+      if (msgEl) msgEl.value = "";
+      say("¡Gracias! Hemos recibido tu mensaje. 🙌");
+      setTimeout(function () { const f = el("#feedback"); if (f) f.hidden = true; say(""); }, 1500);
+    }).catch(function (e) {
+      const m = String((e && e.message) || e);
+      if (/relation|does not exist|table/i.test(m)) say("Falta crear la tabla 'feedback' en Supabase.", true);
+      else say("No se pudo enviar. Revisa tu internet e inténtalo de nuevo.", true);
+    });
+  }
+
   // ---------- Foto del estado del cromo ----------
   // Reduce la imagen (máx. 1000px, JPEG) para subir rápido y ahorrar espacio.
   function compressImage(file) {
@@ -1524,6 +1544,20 @@
     const bnotify = el("#btn-notify");
     if (bnotify) bnotify.addEventListener("click", enableNotifications);
     syncNotifyBtn();
+
+    // Ayuda: abrir/cerrar la guía
+    const bhelp = el("#btn-help");
+    if (bhelp) bhelp.addEventListener("click", function () { el("#settings").hidden = true; el("#help").hidden = false; window.scrollTo(0, 0); });
+    const helpClose = el("#help-close");
+    if (helpClose) helpClose.addEventListener("click", function () { el("#help").hidden = true; });
+
+    // Contacto / sugerencias (se guarda en Supabase)
+    const bfb = el("#btn-feedback");
+    if (bfb) bfb.addEventListener("click", function () { el("#settings").hidden = true; el("#feedback").hidden = false; window.scrollTo(0, 0); });
+    const fbClose = el("#feedback-close");
+    if (fbClose) fbClose.addEventListener("click", function () { el("#feedback").hidden = true; });
+    const fbSend = el("#fb-send");
+    if (fbSend) fbSend.addEventListener("click", sendFeedback);
 
     // Amigos: abrir/cerrar la pantalla + acciones (aceptar/rechazar/eliminar).
     const bfr = el("#btn-friends");

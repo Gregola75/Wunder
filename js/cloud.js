@@ -434,6 +434,15 @@
       } catch (e) { return null; }
     },
     unsubscribe: function (ch) { if (ch && sb.removeChannel) try { sb.removeChannel(ch); } catch (e) {} },
+    // ---- Contacto / sugerencias ----
+    sendFeedback: function (email, message) {
+      if (!session) return Promise.reject(new Error("Sin sesión"));
+      return sb.from("feedback").insert({
+        user_id: session.user.id,
+        email: (email || session.user.email || null),
+        message: message,
+      }).then(function (res) { if (res.error) throw res.error; return true; });
+    },
     unreadCount: function (since) {
       if (!session) return Promise.resolve(0);
       return sb.from("messages").select("id", { count: "exact", head: true })

@@ -856,3 +856,19 @@ body.locked .header-fab { display: none; }
   background: var(--card-2); border: 1px solid var(--line); border-radius: 10px;
   padding: 8px 10px; font-size: 13px; color: var(--text); margin: 2px 0 6px; line-height: 1.4;
 }
+
+/* ---------- Guía "Cómo usar" + contacto ---------- */
+.help-body { max-width: 560px; }
+.help-lead { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 14px; }
+.help-step {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.help-step .help-h { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+.help-step p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.help-step b { color: var(--accent); }
+#feedback textarea {
+  width: 100%; resize: vertical; min-height: 90px; padding: 12px 14px; border-radius: 12px;
+  font-size: 15px; font-family: inherit; background: #0d1117; border: 1px solid var(--line); color: var(--text);
+}
+a.set-item { display: block; text-decoration: none; }
