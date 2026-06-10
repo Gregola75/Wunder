@@ -758,6 +758,7 @@
       host.innerHTML = '<div class="empty">Inicia sesión para ver tus tratos. ☁️</div>'; return;
     }
     host.innerHTML = '<div class="empty">Cargando tratos… ⏳</div>';
+    if (window.Cloud.refreshLocked) window.Cloud.refreshLocked(); // reserva mis cromos de tratos aceptados
     window.Cloud.fetchTrades().then(function (rows) {
       rows = rows || [];
       tradeRows = rows;

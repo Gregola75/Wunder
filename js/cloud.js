@@ -212,6 +212,7 @@
           wantsMine = (w && typeof w === "object" && !Array.isArray(w)) ? w : {};
         }
         push(true);
+        refreshLocked(); // oculta del mercado lo reservado en tratos aceptados
       })
       .catch(function (e) { setStatus("sin conexión"); console.warn(e); });
   }
@@ -239,12 +240,19 @@
     if (immediate) doIt(); else pushTimer = setTimeout(doIt, 1500);
   }
 
-  // Construye lo que se hace público: solo las repes marcadas como cambio/venta.
+  // Cromos RESERVADOS (comprometidos en un trato aceptado): no se publican en
+  // el mercado para que otros no los pidan estando ya cerrados. { coll: {code:1} }
+  var lockedByColl = {};
+
+  // Construye lo que se hace público: solo las repes marcadas como cambio/venta,
+  // excluyendo las que están reservadas en un trato aceptado.
   function buildPublic(state) {
     state = state || {};
     var counts = state.counts || {}, listings = state.listings || {};
+    var locked = lockedByColl[ACTIVE] || {};
     var out = {};
     Object.keys(listings).forEach(function (code) {
+      if (locked[code]) return; // reservado: no se ofrece a otros
       var spare = (counts[code] || 0) - 1;
       if (spare >= 1) {
         var l = listings[code] || {};
@@ -252,6 +260,28 @@
       }
     });
     return out;
+  }
+
+  // Recalcula los cromos reservados a partir de MIS tratos aceptados y
+  // republica el mercado (oculta los comprometidos).
+  function refreshLocked() {
+    if (!session) return Promise.resolve();
+    var uid = session.user.id;
+    return sb.from("trades").select("collection,status,from_user,to_user,code,want,offer")
+      .or("from_user.eq." + uid + ",to_user.eq." + uid).eq("status", "aceptada")
+      .then(function (res) {
+        if (res.error) throw res.error;
+        var map = {};
+        (res.data || []).forEach(function (t) {
+          var coll = t.collection || "wc2026";
+          var wants = (t.want && t.want.length) ? t.want : (t.code ? [t.code] : []);
+          var give = (t.to_user === uid) ? wants : (t.from_user === uid ? (t.offer || []) : []);
+          if (!map[coll]) map[coll] = {};
+          give.forEach(function (c) { map[coll][c] = 1; });
+        });
+        lockedByColl = map;
+        publishMarket(localState()); // republica sin los reservados
+      }).catch(function (e) { console.warn("refreshLocked", e); });
   }
 
   // Lista de códigos que ME FALTAN (count 0) en la colección activa, para que
@@ -372,8 +402,10 @@
     setTradeStatus: function (id, status) {
       if (!session) return Promise.reject(new Error("Sin sesión"));
       return sb.from("trades").update({ status: status, updated_at: new Date().toISOString() }).eq("id", id)
-        .then(function (res) { if (res.error) throw res.error; return true; });
+        .then(function (res) { if (res.error) throw res.error; refreshLocked(); return true; });
     },
+    // Recalcula y publica los cromos reservados (tratos aceptados).
+    refreshLocked: function () { return refreshLocked(); },
     pendingTradesCount: function () {
       if (!session) return Promise.resolve(0);
       return sb.from("trades").select("id", { count: "exact", head: true })
