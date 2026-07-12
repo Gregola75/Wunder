@@ -174,24 +174,14 @@
     "Argentina 2022",     // FWC 19
   ];
 
-  // --- Extras exclusivos Coca-Cola (CC1..CC12) ---
-  // No vienen en sobres normales: están bajo las etiquetas de botellas
-  // Coca-Cola y completan una página especial del álbum.
-  // [nombre, selección, bandera]
-  const COCACOLA = [
-    ["Lamine Yamal", "España", "🇪🇸"],
-    ["Joshua Kimmich", "Alemania", "🇩🇪"],
-    ["Harry Kane", "Inglaterra", "🏴󠁧󠁢󠁥󠁮󠁧󠁿"],
-    ["Santiago Giménez", "México", "🇲🇽"],
-    ["Antonee Robinson", "Estados Unidos", "🇺🇸"],
-    ["Jefferson Lerma", "Colombia", "🇨🇴"],
-    ["Edson Álvarez", "México", "🇲🇽"],
-    ["Virgil van Dijk", "Países Bajos", "🇳🇱"],
-    ["Alphonso Davies", "Canadá", "🇨🇦"],
-    ["Weston McKennie", "Estados Unidos", "🇺🇸"],
-    ["Lautaro Martínez", "Argentina", "🇦🇷"],
-    ["Gabriel Magalhães", "Brasil", "🇧🇷"],
-  ];
+  // --- Extras exclusivos Coca-Cola (CC1..CCn) ---
+  // OJO: los cromos Coca-Cola CAMBIAN según el PAÍS del álbum (la edición
+  // española trae unos y otras ediciones traen otros). Como no hay una lista
+  // oficial única verificada, se dejan como cromos EDITABLES: renómbralos con el
+  // lápiz ✎ para que coincidan con TU álbum. Ajusta también el número (COCA_COLA_N).
+  const COCA_COLA_N = 12; // nº de cromos Coca-Cola de tu edición (cámbialo si es otro)
+  const COCACOLA = [];
+  for (var _cc = 1; _cc <= COCA_COLA_N; _cc++) COCACOLA.push(["Coca-Cola " + _cc, "", "🥤"]);
 
   // --- 48 selecciones por grupo (orden del sorteo final) ---
   // [nombre en español, código corto, bandera emoji]
@@ -367,7 +357,7 @@
     extraIds.push(st.id);
   });
   const extraSection = {
-    key: "extras", title: "Extras · Coca-Cola", subtitle: "Exclusivos fuera de sobres",
+    key: "extras", title: "Extras · Coca-Cola", subtitle: "Varían por país · renómbralos (✎) según tu álbum",
     stickerIds: extraIds,
   };
 
